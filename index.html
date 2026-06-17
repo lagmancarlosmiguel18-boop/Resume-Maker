@@ -865,8 +865,8 @@ function addReference(){
 
 
 function removeReferencesSection(){
- const refSection=document.querySelector('#reference-list').closest('.sidebar-section');
- if(refSection) refSection.remove();
+ const list=document.getElementById('reference-list');
+ if(list) list.innerHTML='';
 }
 
 function convertReferencesToAdditionalInfo(){
