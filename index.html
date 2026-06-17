@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Resume Maker by Carlos Miguel Lagman</title>
+<title>Resume — Francisco Andrade</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -533,6 +533,9 @@ body.theme-white .edit-hint { background: #f0f0f0; border-color: #ccc; color: #9
         </div>
 
         <button class="add-row-btn" onclick="addReference()">+ Add Reference</button>
+        <button class="add-row-btn" onclick="removeReferencesSection()">Remove References Section</button>
+        <button class="add-row-btn" onclick="convertReferencesToAdditionalInfo()">Use as Additional Information</button>
+
       </div>
 
     </div>
@@ -627,7 +630,15 @@ body.theme-white .edit-hint { background: #f0f0f0; border-color: #ccc; color: #9
 
         </div>
         <button class="add-exp-btn" onclick="addEducation()">+ Add Education</button>
-      </div>
+      
+<div class="main-section" id="declaration-section" style="display:none;">
+  <div class="section-title">Declaration</div>
+  <div style="border:2px solid var(--accent); border-radius:18px; padding:16px; font-style:italic; color:var(--text-main);">
+    I hereby declare that the information provided in this resume is true and correct to the best of my knowledge and belief.
+  </div>
+</div>
+<button class="add-exp-btn" onclick="toggleDeclaration()">+ Add/Remove Declaration</button>
+
 
     </div>
   </div>
@@ -850,6 +861,37 @@ function addReference(){
    <div class="ref-detail" contenteditable="true">Email: email@example.com</div>
  `;
  list.appendChild(div);
+}
+
+
+function removeReferencesSection(){
+ const refSection=document.querySelector('#reference-list').closest('.sidebar-section');
+ if(refSection) refSection.remove();
+}
+
+function convertReferencesToAdditionalInfo(){
+ const section=document.querySelector('#reference-list').closest('.sidebar-section');
+ const heading=section.querySelector('.sidebar-heading');
+ heading.textContent='Additional Information';
+
+ document.getElementById('reference-list').innerHTML=`
+   <div class="ref-detail" contenteditable="true">Age: </div>
+   <div class="ref-detail" contenteditable="true">Height: </div>
+   <div class="ref-detail" contenteditable="true">Weight: </div>
+   <div class="ref-detail" contenteditable="true">Religion: </div>
+   <div class="ref-detail" contenteditable="true">Civil Status: </div>
+   <div class="ref-detail" contenteditable="true">Nationality: </div>
+ `;
+
+ const eduTitle=[...document.querySelectorAll('.section-title')]
+   .find(el=>el.textContent.trim()==='Education');
+ if(eduTitle) eduTitle.textContent='Certificates / Seminars';
+}
+
+
+function toggleDeclaration(){
+ const el=document.getElementById('declaration-section');
+ el.style.display = el.style.display==='none' ? 'block' : 'none';
 }
 
 </script>
