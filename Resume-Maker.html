@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume — Francisco Andrade</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:    #c8a96e;
+  --accent2:   #8a6f3e;
+  --sidebar-w: 220px;
+  --font-head: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ── DARK THEME (default) ── */
+body.theme-dark {
+  --bg:        #0d0d0d;
+  --page-bg:   #161616;
+  --sidebar:   #111111;
+  --header:    #1a1a1a;
+  --text:      #e8e8e8;
+  --text-main: #c0c0c0;
+  --muted:     #888888;
+  --rule:      #2a2a2a;
+  --name-col:  #ffffff;
+}
+
+/* ── LIGHT THEME ── */
+body.theme-white {
+  --bg:        #e8e8e8;
+  --page-bg:   #ffffff;
+  --sidebar:   #f0f0f0;
+  --header:    #f5f5f5;
+  --text:      #333333;
+  --text-main: #444444;
+  --muted:     #777777;
+  --rule:      #dddddd;
+  --name-col:  #1a1a1a;
+  --accent2:   var(--accent);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600&display=swap');
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg, #0d0d0d);
+  color: var(--text, #e8e8e8);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.65;
+  min-height: 100vh;
+  transition: background .35s ease, color .35s ease;
+}
+
+/* ── Toolbar ── */
+.toolbar {
+  position: sticky; top: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; padding: 10px 20px;
+  background: rgba(10,10,10,.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #2a2a2a;
+  flex-wrap: wrap;
+}
+body.theme-white .toolbar { background: rgba(240,240,240,.95); border-bottom: 1px solid #ccc; }
+
+.toolbar-label { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #666; margin-right: 2px; }
+body.theme-white .toolbar-label { color: #999; }
+
+.toolbar-sep { width: 1px; height: 22px; background: #333; margin: 0 4px; }
+body.theme-white .toolbar-sep { background: #ccc; }
+
+.theme-pills { display: flex; gap: 5px; }
+.theme-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px;
+  border: 1.5px solid transparent;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  transition: all .2s; font-family: var(--font-body);
+}
+.theme-pill.dark  { background: #1e1e1e; color: #e0e0e0; border-color: #333; }
+.theme-pill.light { background: #f0f0f0; color: #222;    border-color: #ccc; }
+.theme-pill.dark.active  { border-color: var(--accent); color: var(--accent); }
+.theme-pill.light.active { border-color: #555; color: #111; }
+.theme-pill:hover { transform: translateY(-1px); }
+
+.pill-dot { width: 8px; height: 8px; border-radius: 50%; }
+.theme-pill.dark  .pill-dot { background: #444; }
+.theme-pill.light .pill-dot { background: #ccc; border: 1px solid #aaa; }
+
+.accent-label { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #666; }
+body.theme-white .accent-label { color: #999; }
+
+.swatches { display: flex; gap: 6px; align-items: center; }
+.swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2.5px solid transparent; cursor: pointer;
+  transition: transform .15s, border-color .15s; position: relative;
+}
+.swatch:hover { transform: scale(1.2); }
+.swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+body.theme-white .swatch.active { border-color: #222; box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+
+.custom-swatch {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px dashed #555; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: transform .15s; overflow: hidden; position: relative;
+}
+.custom-swatch:hover { transform: scale(1.2); }
+.custom-swatch input[type="color"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  width: 100%; height: 100%; border: none; padding: 0;
+}
+
+.print-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-radius: 20px;
+  border: 1.5px solid #444; background: transparent; color: #ccc;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: var(--font-body); transition: all .2s;
+}
+.print-pill:hover { border-color: var(--accent); color: var(--accent); }
+body.theme-white .print-pill { border-color: #bbb; color: #555; }
+body.theme-white .print-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Page Shell ── */
+.page {
+  max-width: 860px; margin: 30px auto 60px;
+  background: var(--page-bg, #161616);
+  border: 1px solid var(--rule, #2a2a2a);
+  border-radius: 4px; overflow: visible;
+  box-shadow: 0 0 80px rgba(200,169,110,.07);
+  opacity: 0; transform: translateY(24px);
+  animation: fadeUp .6s ease forwards;
+  transition: background .35s, border-color .35s;
+}
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: stretch;
+  background: var(--header, #1a1a1a);
+  border-bottom: 3px solid var(--accent);
+  min-height: 140px; overflow: visible;
+  position: relative; z-index: 1;
+  transition: background .35s, border-color .35s;
+}
+
+.header-photo-slot {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--sidebar, #111111);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 20px 20px 0; overflow: visible;
+  position: relative; z-index: 2; transition: background .35s;
+}
+
+.photo-wrap {
+  width: 104px; height: 114px; border-radius: 14px;
+  border: 3px solid var(--accent); overflow: hidden;
+  background: #222; position: relative; bottom: -22px; flex-shrink: 0;
+  box-shadow: 0 6px 28px rgba(0,0,0,.4), 0 0 0 5px rgba(200,169,110,.12);
+  animation: photoPop .5s .3s ease both; z-index: 2; cursor: pointer; transition: border-color .35s;
+}
+body.theme-white .photo-wrap { background: #ddd; box-shadow: 0 6px 28px rgba(0,0,0,.15); }
+@keyframes photoPop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 36px; color: var(--muted); }
+
+.header-info { flex: 1; padding: 32px 36px 28px; display: flex; flex-direction: column; justify-content: center; }
+.header-name { font-family: var(--font-head); font-size: 34px; font-weight: 900; color: var(--name-col); letter-spacing: .04em; line-height: 1.1; animation: slideRight .55s .15s ease both; transition: color .35s; }
+.header-title { font-size: 12px; font-weight: 500; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); margin-top: 8px; animation: slideRight .55s .25s ease both; transition: color .35s; }
+@keyframes slideRight { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── Body layout ── */
+.body { display: flex; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  background: var(--sidebar, #111111);
+  padding: 42px 18px 28px;
+  border-right: 1px solid var(--rule, #2a2a2a);
+  transition: background .35s, border-color .35s;
+}
+.sidebar-section { margin-bottom: 20px; opacity: 0; animation: fadeUp .5s ease forwards; }
+.sidebar-section:nth-child(1) { animation-delay: .2s; }
+.sidebar-section:nth-child(2) { animation-delay: .3s; }
+.sidebar-section:nth-child(3) { animation-delay: .4s; }
+.sidebar-section:nth-child(4) { animation-delay: .5s; }
+
+.sidebar-heading {
+  font-size: 10px; font-weight: 600; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--accent);
+  transition: color .35s, border-color .35s;
+}
+
+.contact-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 9px; font-size: 12px; color: var(--text); word-break: break-all; }
+.contact-item svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 2px; fill: var(--accent); transition: fill .35s; }
+
+/* ── Removable rows (skill, lang, bullet) ── */
+.skill-item, .lang-item, .exp-bullets li {
+  position: relative;
+}
+.skill-item { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; font-size: 12px; color: var(--text); }
+.skill-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; transition: background .35s; }
+
+.lang-item { margin-bottom: 7px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 4px; }
+.lang-level { font-size: 10px; color: var(--muted); }
+
+/* Remove (×) button shown on hover */
+.rm-btn {
+  display: none;
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+  z-index: 10;
+  transition: background .15s;
+}
+.rm-btn:hover { background: #e74c3c; }
+
+.skill-item:hover .rm-btn,
+.lang-item:hover .rm-btn,
+.exp-bullets li:hover .rm-btn { display: flex; }
+
+/* Add row buttons */
+.add-row-btn {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 6px;
+  background: none; border: 1px dashed var(--accent);
+  color: var(--accent); border-radius: 12px;
+  padding: 3px 10px; font-size: 11px; cursor: pointer;
+  font-family: var(--font-body);
+  opacity: 0.6; transition: opacity .2s;
+  width: fit-content;
+}
+.add-row-btn:hover { opacity: 1; }
+
+.ref-name  { font-size: 12px; font-weight: 600; color: var(--name-col); margin-bottom: 3px; transition: color .35s; }
+.ref-role  { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+.ref-detail{ font-size: 11px; color: var(--text); margin-bottom: 2px; }
+
+/* ── Main ── */
+.main { flex: 1; padding: 26px 32px 32px; min-width: 0; }
+.main-section { margin-bottom: 22px; opacity: 0; animation: fadeUp .5s ease forwards; }
+.main-section:nth-child(1) { animation-delay: .25s; }
+.main-section:nth-child(2) { animation-delay: .35s; }
+.main-section:nth-child(3) { animation-delay: .45s; }
+
+.section-title {
+  font-size: 11px; font-weight: 600; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 14px; padding-bottom: 7px;
+  border-bottom: 1px solid var(--rule);
+  position: relative; transition: color .35s, border-color .35s;
+}
+.section-title::after {
+  content: ''; position: absolute; bottom: -1px; left: 0;
+  width: 36px; height: 1.5px; background: var(--accent);
+  transition: width .4s ease, background .35s;
+}
+.main-section:hover .section-title::after { width: 100%; }
+
+.profile-text { font-size: 13px; color: var(--text-main); line-height: 1.8; }
+
+/* ── Work Experience ── */
+.exp-entry { margin-bottom: 14px; position: relative; }
+.exp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
+.exp-company { font-weight: 600; font-size: 13px; color: var(--name-col); transition: color .35s; }
+.exp-dates { font-size: 11px; color: var(--accent); font-weight: 500; white-space: nowrap; margin-left: 12px; transition: color .35s; }
+.exp-role { font-size: 12px; color: var(--muted); font-style: italic; margin-bottom: 6px; }
+.exp-bullets { list-style: none; padding: 0; margin-top: 5px; }
+.exp-bullets li {
+  padding-left: 14px; padding-right: 20px; position: relative;
+  font-size: 12px; color: var(--text-main); line-height: 1.7; margin-bottom: 3px;
+}
+.exp-bullets li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); font-size: 10px; top: 2px; transition: color .35s; }
+.exp-bullets li .rm-btn { right: 0; }
+
+.exp-divider { border: none; border-top: 1px solid var(--rule); margin: 10px 0; transition: border-color .35s; }
+
+/* Remove whole exp-entry button */
+.rm-entry-btn {
+  display: none;
+  position: absolute;
+  top: 0; right: -8px;
+  background: #c0392b; color: #fff;
+  border: none; border-radius: 4px;
+  padding: 2px 6px; font-size: 10px; cursor: pointer;
+  font-family: var(--font-body);
+  transition: background .15s;
+  z-index: 10;
+}
+.rm-entry-btn:hover { background: #e74c3c; }
+.exp-entry:hover .rm-entry-btn { display: block; }
+
+/* Add experience button */
+.add-exp-btn {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 8px;
+  background: none; border: 1px dashed var(--accent);
+  color: var(--accent); border-radius: 14px;
+  padding: 5px 14px; font-size: 11px; cursor: pointer;
+  font-family: var(--font-body);
+  opacity: 0.6; transition: opacity .2s;
+}
+.add-exp-btn:hover { opacity: 1; }
+
+/* ── Education ── */
+.edu-entry { margin-bottom: 14px; position: relative; }
+.edu-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.edu-degree { font-weight: 600; font-size: 13px; color: var(--name-col); transition: color .35s; }
+.edu-years { font-size: 11px; color: var(--accent); font-weight: 500; white-space: nowrap; margin-left: 12px; transition: color .35s; }
+.edu-school { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+.edu-gpa { font-size: 12px; color: var(--text-main); }
+.edu-gpa strong { color: var(--accent); transition: color .35s; }
+.edu-entry:hover .rm-entry-btn { display: block; }
+
+/* ── Floating hint ── */
+.edit-hint {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #1e1e1e; border: 1px solid #333; border-radius: 40px;
+  padding: 9px 18px; font-size: 12px; color: #666;
+  display: flex; align-items: center; gap: 7px;
+  z-index: 100; user-select: none;
+  opacity: 0; animation: fadeUp .5s 1.2s ease forwards;
+}
+body.theme-white .edit-hint { background: #f0f0f0; border-color: #ccc; color: #999; }
+.edit-hint-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); transition: background .35s; }
+
+/* ── Print ── */
+@page { size: A4 portrait; margin: 0; }
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { width: 210mm; margin: 0; padding: 0; }
+  .toolbar, .edit-hint, .rm-btn, .rm-entry-btn, .add-row-btn, .add-exp-btn { display: none !important; }
+  .page { width: 210mm; max-width: 210mm; margin: 0; box-shadow: none; border: none; border-radius: 0; animation: none; opacity: 1; transform: none; }
+  .body { height: auto; overflow: visible; }
+  .main-section, .sidebar-section { animation: none; opacity: 1; }
+  .exp-bullets li { padding-right: 0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .body { flex-direction: column; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--rule); }
+  .header { flex-direction: column; }
+  .header-photo-slot { width: 100%; padding: 20px 20px 12px; align-items: center; }
+  .header-name { font-size: 26px; }
+  .main { padding: 20px 18px; }
+}
+
+/* AUTO FIT TO SINGLE A4 PAGE */
+@media print {
+  .page{
+    width:210mm !important;
+    min-height:297mm !important;
+    max-height:297mm !important;
+    overflow:hidden !important;
+  }
+  .main { padding: 20px 26px 24px !important; }
+  .sidebar { padding: 34px 16px 20px !important; }
+  .profile-text,
+  .exp-bullets li,
+  .edu-school,
+  .edu-gpa,
+  .contact-item,
+  .skill-item,
+  .lang-item {
+    font-size: 11px !important;
+    line-height: 1.4 !important;
+  }
+  .main-section { margin-bottom: 14px !important; }
+  .exp-entry, .edu-entry { margin-bottom: 8px !important; }
+  .exp-divider { margin: 6px 0 !important; }
+}
+
+
+.edu-gpa { position:relative; }
+.gpa-rm-btn{
+  display:none; margin-left:8px; background:#c0392b;color:#fff;border:none;
+  border-radius:4px;padding:1px 5px;font-size:10px;cursor:pointer;
+}
+.edu-entry:hover .gpa-rm-btn{display:inline-block;}
+
+</style>
+</head>
+<body class="theme-dark">
+
+<!-- ── TOOLBAR ── -->
+<div class="toolbar">
+  <span class="toolbar-label">Theme</span>
+  <div class="theme-pills">
+    <button class="theme-pill dark active" id="pill-dark" onclick="setTheme('dark')">
+      <span class="pill-dot"></span> Dark
+    </button>
+    <button class="theme-pill light" id="pill-light" onclick="setTheme('light')">
+      <span class="pill-dot"></span> Light
+    </button>
+  </div>
+
+  <div class="toolbar-sep"></div>
+
+  <span class="accent-label">Accent</span>
+  <div class="swatches">
+    <div class="swatch active" data-color="#c8a96e" style="background:#c8a96e" title="Gold"   onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#4f9cf9" style="background:#4f9cf9" title="Blue"          onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#6ee87a" style="background:#6ee87a" title="Green"         onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#f96b6b" style="background:#f96b6b" title="Red"           onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#c97af9" style="background:#c97af9" title="Purple"        onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#f9c46b" style="background:#f9c46b" title="Yellow"        onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#4fd1c5" style="background:#4fd1c5" title="Teal"          onclick="setAccent(this)"></div>
+    <div class="swatch" data-color="#f97316" style="background:#f97316" title="Orange"        onclick="setAccent(this)"></div>
+    <div class="custom-swatch" title="Custom colour">
+      <span style="font-size:13px;color:#666;pointer-events:none">+</span>
+      <input type="color" id="customColor" value="#c8a96e" oninput="setCustomAccent(this.value)">
+    </div>
+  </div>
+
+  <div class="toolbar-sep"></div>
+
+  <button class="print-pill" onclick="window.print()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 8H5c-1.7 0-3 1.3-3 3v6h4v4h12v-4h4v-6c0-1.7-1.3-3-3-3zm-3 11H8v-5h8v5zm3-7c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm-1-9H6v4h12V3z"/></svg>
+    Save as PDF
+  </button>
+</div>
+
+<!-- ── RESUME PAGE ── -->
+<div class="page" id="resumePage">
+
+  <div class="header">
+    <div class="header-photo-slot">
+      <div class="photo-wrap" id="photoWrap" onclick="triggerPhotoUpload()" title="Click to change photo">
+        <div class="photo-placeholder" id="photoPlaceholder">👤</div>
+        <img id="photoImg" src="" alt="Profile photo" style="display:none">
+      </div>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhoto(event)">
+    </div>
+    <div class="header-info">
+      <div class="header-name" contenteditable="true" spellcheck="false">FRANCISCO ANDRADE</div>
+      <div class="header-title" contenteditable="true" spellcheck="false">CREATIVE HEAD</div>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Contact</div>
+        <div class="contact-item">
+          <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          <span contenteditable="true">+123-456-7890</span>
+        </div>
+        <div class="contact-item">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span contenteditable="true">hello@reallygreatsite.com</span>
+        </div>
+        <div class="contact-item">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span contenteditable="true">123 Anywhere St., Any City</span>
+        </div>
+
+      </div>
+
+      <div class="sidebar-section" id="skills-section">
+        <div class="sidebar-heading">Skills</div>
+        <div id="skills-list">
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Project Management</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Public Relations</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Teamwork</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Time Management</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Leadership</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Effective Communication</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Critical Thinking</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="skill-item"><span class="skill-dot"></span><span contenteditable="true">Digital Marketing</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+        </div>
+        <button class="add-row-btn" onclick="addSkill()">+ Add Skill</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Languages</div>
+        <div id="lang-list">
+          <div class="lang-item"><span contenteditable="true">English</span><span class="lang-level" contenteditable="true">(Fluent)</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="lang-item"><span contenteditable="true">French</span><span class="lang-level" contenteditable="true">(Fluent)</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="lang-item"><span contenteditable="true">German</span><span class="lang-level" contenteditable="true">(Basic)</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+          <div class="lang-item"><span contenteditable="true">Spanish</span><span class="lang-level" contenteditable="true">(Intermediate)</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></div>
+        </div>
+        <button class="add-row-btn" onclick="addLanguage()">+ Add Language</button>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Reference</div>
+        <div class="ref-name" contenteditable="true">Estelle Darcy</div>
+        <div class="ref-role" contenteditable="true">Wardiere Inc. / CTO</div>
+        <div class="ref-detail" contenteditable="true">Phone: 123-456-7890</div>
+        <div class="ref-detail" contenteditable="true">Email: hello@reallygreatsite.com</div>
+      </div>
+
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <div class="main-section">
+        <div class="section-title">Profile</div>
+        <p class="profile-text" contenteditable="true">Results-driven Creative Head with over a decade of experience leading brand strategy, visual identity development, and cross-functional creative teams. Adept at translating business objectives into compelling narratives that resonate with global audiences. Proven track record of delivering award-winning campaigns on time and within budget, while fostering a culture of innovation and collaboration.</p>
+      </div>
+
+      <div class="main-section">
+        <div class="section-title">Work Experience</div>
+        <div id="exp-list">
+
+          <div class="exp-entry">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+            <div class="exp-header">
+              <div class="exp-company" contenteditable="true">Borcelle Studio</div>
+              <div class="exp-dates" contenteditable="true">2030 – PRESENT</div>
+            </div>
+            <div class="exp-role" contenteditable="true">Marketing Manager &amp; Specialist</div>
+            <ul class="exp-bullets">
+              <li contenteditable="true">Led a team of 12 designers and copywriters to deliver 30+ brand campaigns annually, achieving a 28% increase in client retention.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+              <li contenteditable="true">Developed and executed multi-channel marketing strategies, growing organic reach by 45% year-over-year.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+              <li contenteditable="true">Collaborated with C-suite stakeholders to align creative direction with overarching business goals.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+            </ul>
+            <button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>
+          </div>
+
+          <hr class="exp-divider">
+
+          <div class="exp-entry">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+            <div class="exp-header">
+              <div class="exp-company" contenteditable="true">Fauget Studio</div>
+              <div class="exp-dates" contenteditable="true">2025 – 2029</div>
+            </div>
+            <div class="exp-role" contenteditable="true">Marketing Manager &amp; Specialist</div>
+            <ul class="exp-bullets">
+              <li contenteditable="true">Spearheaded rebranding initiatives for five major accounts, resulting in a 35% uplift in brand awareness metrics.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+              <li contenteditable="true">Managed an annual marketing budget of $2.5M, consistently delivering under budget while exceeding KPIs.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+              <li contenteditable="true">Mentored junior designers and established quality standards that reduced revision cycles by 40%.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+            </ul>
+            <button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>
+          </div>
+
+          <hr class="exp-divider">
+
+          <div class="exp-entry">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+            <div class="exp-header">
+              <div class="exp-company" contenteditable="true">Studio Shodwe</div>
+              <div class="exp-dates" contenteditable="true">2024 – 2025</div>
+            </div>
+            <div class="exp-role" contenteditable="true">Marketing Manager &amp; Specialist</div>
+            <ul class="exp-bullets">
+              <li contenteditable="true">Produced visual content strategies for social media, increasing engagement rates by 60% across all platforms.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+              <li contenteditable="true">Coordinated with external agencies and vendors to deliver integrated campaigns within tight deadlines.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+            </ul>
+            <button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>
+          </div>
+
+        </div>
+        <button class="add-exp-btn" onclick="addExperience()">+ Add Work Experience</button>
+      </div>
+
+      <div class="main-section">
+        <div class="section-title">Education</div>
+        <div id="edu-list">
+
+          <div class="edu-entry">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+            <div class="edu-header">
+              <div class="edu-degree" contenteditable="true">Master of Business Management</div>
+              <div class="edu-years" contenteditable="true">2029 – 2031</div>
+            </div>
+            <div class="edu-school" contenteditable="true">School of Business | Wardiere University</div>
+            <div class="edu-gpa">GPA: <strong contenteditable="true">3.8</strong> / 4.0 <button class="gpa-rm-btn" onclick="removeGPA(this)">Remove GPA</button></div>
+          </div>
+
+          <div class="edu-entry">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+            <div class="edu-header">
+              <div class="edu-degree" contenteditable="true">Bachelor of Business Management</div>
+              <div class="edu-years" contenteditable="true">2025 – 2029</div>
+            </div>
+            <div class="edu-school" contenteditable="true">School of Business | Wardiere University</div>
+            <div class="edu-gpa">GPA: <strong contenteditable="true">3.8</strong> / 4.0 <button class="gpa-rm-btn" onclick="removeGPA(this)">Remove GPA</button></div>
+          </div>
+
+        </div>
+        <button class="add-exp-btn" onclick="addEducation()">+ Add Education</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="edit-hint">
+  <div class="edit-hint-dot"></div>
+  Click text to edit &nbsp;·&nbsp; Hover rows to remove &nbsp;·&nbsp; + to add
+</div>
+
+<script>
+/* ── Theme ── */
+function setTheme(theme) {
+  const cls = theme === 'light' ? 'theme-white' : 'theme-dark';
+  document.body.className = cls;
+  document.getElementById('pill-dark').classList.toggle('active',  theme === 'dark');
+  document.getElementById('pill-light').classList.toggle('active', theme === 'light');
+}
+
+/* ── Accent ── */
+function setAccent(swatchEl) {
+  applyAccent(swatchEl.dataset.color);
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  swatchEl.classList.add('active');
+  document.getElementById('customColor').value = swatchEl.dataset.color;
+}
+function setCustomAccent(color) {
+  applyAccent(color);
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+}
+function applyAccent(color) {
+  document.documentElement.style.setProperty('--accent', color);
+  document.documentElement.style.setProperty('--accent2', color);
+}
+
+/* ── Photo ── */
+function triggerPhotoUpload() { document.getElementById('photoInput').click(); }
+function handlePhoto(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('photoImg');
+    img.src = ev.target.result; img.style.display = 'block';
+    document.getElementById('photoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── Remove a single row (skill / lang / bullet) ── */
+function removeRow(el) {
+  el.remove();
+}
+
+/* ── Remove an exp/edu entry + its preceding divider (if any) ── */
+function removeEntry(entry) {
+  const prev = entry.previousElementSibling;
+  if (prev && prev.classList.contains('exp-divider')) prev.remove();
+  else {
+    const next = entry.nextElementSibling;
+    if (next && next.classList.contains('exp-divider')) next.remove();
+  }
+  entry.remove();
+}
+
+/* ── Add skill ── */
+function addSkill() {
+  const list = document.getElementById('skills-list');
+  const div = document.createElement('div');
+  div.className = 'skill-item';
+  div.innerHTML = '<span class="skill-dot"></span><span contenteditable="true">New Skill</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button>';
+  list.appendChild(div);
+  div.querySelector('[contenteditable]').focus();
+}
+
+/* ── Add language ── */
+function addLanguage() {
+  const list = document.getElementById('lang-list');
+  const div = document.createElement('div');
+  div.className = 'lang-item';
+  div.innerHTML = '<span contenteditable="true">Language</span><span class="lang-level" contenteditable="true">(Level)</span><button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button>';
+  list.appendChild(div);
+  div.querySelector('[contenteditable]').focus();
+}
+
+/* ── Add bullet to an exp entry ── */
+function addBullet(ul) {
+  const li = document.createElement('li');
+  li.setAttribute('contenteditable', 'true');
+  li.innerHTML = 'New achievement or responsibility.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button>';
+  ul.appendChild(li);
+  li.focus();
+}
+
+/* ── Add new Work Experience ── */
+function addExperience() {
+  const list = document.getElementById('exp-list');
+  // Add divider before new entry if list has entries
+  if (list.querySelector('.exp-entry')) {
+    const hr = document.createElement('hr');
+    hr.className = 'exp-divider';
+    list.appendChild(hr);
+  }
+  const entry = document.createElement('div');
+  entry.className = 'exp-entry';
+  entry.innerHTML = `
+    <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+    <div class="exp-header">
+      <div class="exp-company" contenteditable="true">Company Name</div>
+      <div class="exp-dates" contenteditable="true">Year – Year</div>
+    </div>
+    <div class="exp-role" contenteditable="true">Job Title</div>
+    <ul class="exp-bullets">
+      <li contenteditable="true">Describe your key achievement or responsibility here.<button class="rm-btn" onclick="removeRow(this.parentElement)" title="Remove">×</button></li>
+    </ul>
+    <button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>
+  `;
+  list.appendChild(entry);
+  entry.querySelector('[contenteditable]').focus();
+  autoScaleEducation();
+}
+
+/* ── Add new Education ── */
+function addEducation() {
+  const list = document.getElementById('edu-list');
+  const entry = document.createElement('div');
+  entry.className = 'edu-entry';
+  entry.innerHTML = `
+    <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)" title="Remove">✕ Remove</button>
+    <div class="edu-header">
+      <div class="edu-degree" contenteditable="true">Degree Name</div>
+      <div class="edu-years" contenteditable="true">Year – Year</div>
+    </div>
+    <div class="edu-school" contenteditable="true">School Name | University</div>
+    <div class="edu-gpa">GPA: <strong contenteditable="true">0.0</strong> / 4.0 <button class="gpa-rm-btn" onclick="removeGPA(this)">Remove GPA</button></div>
+  `;
+  list.appendChild(entry);
+  entry.querySelector('[contenteditable]').focus();
+}
+
+/* ── Section reveal ── */
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.main-section, .sidebar-section').forEach(el => observer.observe(el));
+
+/* ── Print: strip contenteditable ── */
+window.addEventListener('beforeprint', () => {
+  document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.dataset.ce = el.getAttribute('contenteditable');
+    el.removeAttribute('contenteditable');
+  });
+});
+window.addEventListener('afterprint', () => {
+  document.querySelectorAll('[data-ce]').forEach(el => {
+    el.setAttribute('contenteditable', el.dataset.ce);
+    delete el.dataset.ce;
+  });
+});
+
+function removeGPA(btn){
+  const gpa = btn.closest('.edu-gpa');
+  if(gpa) gpa.remove();
+  autoScaleEducation();
+}
+
+function autoScaleEducation(){
+  const eduList = document.getElementById('edu-list');
+  const count = eduList.querySelectorAll('.edu-entry').length;
+  let scale = 1;
+  if(count >= 4) scale = 0.95;
+  if(count >= 5) scale = 0.90;
+  if(count >= 6) scale = 0.85;
+
+  eduList.style.transform = `scale(${scale})`;
+  eduList.style.transformOrigin = 'top left';
+  eduList.style.width = `${100/scale}%`;
+}
+
+document.addEventListener('DOMContentLoaded', autoScaleEducation);
+
+</script>
+</body>
+</html>
