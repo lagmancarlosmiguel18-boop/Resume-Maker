@@ -872,7 +872,7 @@ function removeReferencesSection(){
 function convertReferencesToAdditionalInfo(){
  const section=document.querySelector('#reference-list').closest('.sidebar-section');
  const heading=section.querySelector('.sidebar-heading');
- heading.textContent='Additional Information';
+ heading.textContent='Additional Information / References';
 
  document.getElementById('reference-list').innerHTML=`
    <div class="ref-detail" contenteditable="true">Age: </div>
