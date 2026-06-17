@@ -521,10 +521,18 @@ body.theme-white .edit-hint { background: #f0f0f0; border-color: #ccc; color: #9
 
       <div class="sidebar-section">
         <div class="sidebar-heading">Reference</div>
-        <div class="ref-name" contenteditable="true">Estelle Darcy</div>
-        <div class="ref-role" contenteditable="true">Wardiere Inc. / CTO</div>
-        <div class="ref-detail" contenteditable="true">Phone: 123-456-7890</div>
-        <div class="ref-detail" contenteditable="true">Email: hello@reallygreatsite.com</div>
+
+        <div id="reference-list">
+          <div class="reference-entry" style="position:relative;margin-bottom:12px;">
+            <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕ Remove</button>
+            <div class="ref-name" contenteditable="true">Estelle Darcy</div>
+            <div class="ref-role" contenteditable="true">Wardiere Inc. / CTO</div>
+            <div class="ref-detail" contenteditable="true">Phone: 123-456-7890</div>
+            <div class="ref-detail" contenteditable="true">Email: hello@reallygreatsite.com</div>
+          </div>
+        </div>
+
+        <button class="add-row-btn" onclick="addReference()">+ Add Reference</button>
       </div>
 
     </div>
@@ -827,6 +835,22 @@ function autoFitPage(){
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{autoScaleEducation();changePaperSize();});
+
+
+function addReference(){
+ const list=document.getElementById('reference-list');
+ const div=document.createElement('div');
+ div.className='reference-entry';
+ div.style='position:relative;margin-bottom:12px;';
+ div.innerHTML=`
+   <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕ Remove</button>
+   <div class="ref-name" contenteditable="true">Reference Name</div>
+   <div class="ref-role" contenteditable="true">Company / Position</div>
+   <div class="ref-detail" contenteditable="true">Phone: +123456789</div>
+   <div class="ref-detail" contenteditable="true">Email: email@example.com</div>
+ `;
+ list.appendChild(div);
+}
 
 </script>
 </body>
