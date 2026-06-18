@@ -124,6 +124,54 @@ body.theme-white .theme-pill:hover:not(.active) { color: #555; }
 .swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.2); }
 body.theme-white .swatch.active { border-color: #222; box-shadow: 0 0 0 2px rgba(0,0,0,.12); }
 
+/* ── Template picker swatches ── */
+.tb-group-template { padding-right: 12px; }
+.tpl-swatches { display: flex; gap: 6px; align-items: center; }
+.tpl-swatch {
+  width: 32px; height: 24px; padding: 3px;
+  border: 1.5px solid rgba(255,255,255,.1); border-radius: 6px;
+  background: rgba(255,255,255,.02); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+}
+body.theme-white .tpl-swatch { border-color: rgba(0,0,0,.1); background: rgba(0,0,0,.02); }
+.tpl-swatch:hover { transform: translateY(-1px); border-color: var(--accent); }
+.tpl-swatch.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent-soft); }
+
+.tpl-mini { width: 24px; height: 16px; display: flex; flex-direction: column; gap: 1.5px; border-radius: 2px; overflow: hidden; }
+.tpl-mini .m-head { height: 4px; background: var(--muted); opacity: .55; border-radius: 1px; flex-shrink: 0; }
+.tpl-mini .m-body { flex: 1; display: flex; gap: 1.5px; min-height: 0; }
+.tpl-mini .m-side { width: 34%; background: var(--accent); opacity: .6; border-radius: 1px; }
+.tpl-mini .m-main { flex: 1; background: var(--muted); opacity: .3; border-radius: 1px; }
+
+/* Nordic — airy, thin rail, minimal header */
+.tpl-swatch[data-tpl="nordic"] .m-head { opacity: .25; height: 3px; }
+.tpl-swatch[data-tpl="nordic"] .m-side { width: 22%; opacity: .35; }
+.tpl-swatch[data-tpl="nordic"] .m-main { opacity: .18; }
+
+/* Banner — thick top band, side panel flipped right */
+.tpl-swatch[data-tpl="banner"] .m-head { height: 7px; opacity: .85; }
+.tpl-swatch[data-tpl="banner"] .m-body { flex-direction: row; }
+.tpl-swatch[data-tpl="banner"] .m-side { order: 2; width: 30%; opacity: .45; }
+.tpl-swatch[data-tpl="banner"] .m-main { order: 1; }
+
+/* Mono — thin accent rail, sharp & dense */
+.tpl-swatch[data-tpl="mono"] .m-side { width: 10%; opacity: 1; }
+.tpl-swatch[data-tpl="mono"] .m-main { opacity: .4; }
+.tpl-swatch[data-tpl="mono"], .tpl-swatch[data-tpl="mono"] .tpl-mini, .tpl-swatch[data-tpl="mono"] .m-head, .tpl-swatch[data-tpl="mono"] .m-side, .tpl-swatch[data-tpl="mono"] .m-main { border-radius: 0; }
+
+/* Classic — stacked single column, no side panel */
+.tpl-swatch[data-tpl="classic"] .m-body { flex-direction: column; gap: 1.5px; }
+.tpl-swatch[data-tpl="classic"] .m-side { width: 100%; height: 35%; opacity: .4; }
+.tpl-swatch[data-tpl="classic"] .m-main { width: 100%; opacity: .25; }
+.tpl-swatch[data-tpl="classic"] .tpl-mini { border-radius: 1px; }
+
+.tpl-current-label {
+  font-size: 11px; font-weight: 600; color: var(--text, #ddd); white-space: nowrap;
+  padding-left: 2px; min-width: 44px;
+}
+body.theme-white .tpl-current-label { color: #444; }
+
 .custom-swatch {
   width: 20px; height: 20px; border-radius: 50%;
   border: 1.5px dashed #666; cursor: pointer;
@@ -418,6 +466,105 @@ body.theme-white .exp-dates { color: var(--accent2); }
   outline: none;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   TEMPLATE SYSTEM
+   Five distinct resume layouts, switched via body[data-template].
+   Every override below reuses the existing theme tokens (--accent,
+   --rule, --sidebar, --text, etc.) so Dark/Light + Accent colour
+   keep working correctly no matter which template is active.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Only the original Onyx template keeps the decorative header wash */
+body:not([data-template="onyx"]) .header::before { display: none; }
+
+/* ── 2. NORDIC — light, airy, minimal, no card-sidebar ── */
+body[data-template="nordic"] .sidebar { background: transparent; }
+body[data-template="nordic"] .header-photo-slot { background: transparent; }
+body[data-template="nordic"] .header { border-bottom: 1px solid var(--rule); }
+body[data-template="nordic"] .photo-wrap { border-radius: 50%; box-shadow: none; border-width: 2px; }
+body[data-template="nordic"] .header-name { font-family: var(--font-body); font-weight: 300; font-size: 34px; letter-spacing: -.02em; }
+body[data-template="nordic"] .header-title { font-weight: 500; letter-spacing: .3em; color: var(--muted); }
+body[data-template="nordic"] .sidebar-heading { color: var(--muted); font-weight: 600; }
+body[data-template="nordic"] .skill-dot, body[data-template="nordic"] .contact-item svg { opacity: .8; }
+body[data-template="nordic"] .section-title { color: var(--text); font-weight: 600; }
+body[data-template="nordic"] .section-title::after { display: none; }
+body[data-template="nordic"] .exp-dates { background: transparent; padding: 2px 0; color: var(--muted); font-weight: 500; }
+body[data-template="nordic"] .exp-company, body[data-template="nordic"] .edu-degree { font-weight: 600; }
+body[data-template="nordic"] .declaration-box { border-width: 1px; background: transparent; }
+
+/* ── 3. BANNER — bold centered header, side panel flips right ── */
+body[data-template="banner"] { --sidebar-w: 232px; }
+body[data-template="banner"] .header {
+  flex-direction: column; align-items: center; text-align: center;
+  padding: 34px 30px 26px; min-height: auto; border-bottom: 4px solid var(--accent);
+}
+body[data-template="banner"] .header-photo-slot { width: auto; padding: 0; background: transparent; align-items: center; }
+body[data-template="banner"] .photo-wrap { position: relative; bottom: 0; margin-bottom: 16px; }
+body[data-template="banner"] .header-info { padding: 0; align-items: center; }
+body[data-template="banner"] .header-name { font-size: 32px; }
+body[data-template="banner"] .body { flex-direction: row; }
+body[data-template="banner"] .sidebar { order: 2; border-right: none; border-left: 2px solid var(--accent); background: var(--accent-soft); }
+body[data-template="banner"] .main { order: 1; }
+body[data-template="banner"] .section-title {
+  display: inline-block; background: var(--accent-soft); color: var(--accent2);
+  padding: 5px 16px; border-radius: 20px; border-bottom: none;
+}
+body[data-template="banner"] .section-title::after { display: none; }
+
+/* ── 4. MONO — modern, sharp-cornered, monospace tech aesthetic ── */
+body[data-template="mono"] { --sidebar-w: 204px; }
+body[data-template="mono"] .sidebar { background: transparent; border-right: 2px solid var(--accent); }
+body[data-template="mono"] .header-photo-slot { background: transparent; }
+body[data-template="mono"] .photo-wrap, body[data-template="mono"] .page, body[data-template="mono"] .declaration-box,
+body[data-template="mono"] .exp-dates, body[data-template="mono"] .edu-years, body[data-template="mono"] .mode-select,
+body[data-template="mono"] .skill-bar, body[data-template="mono"] .skill-bar-fill, body[data-template="mono"] .add-row-btn,
+body[data-template="mono"] .add-exp-btn { border-radius: 2px; }
+body[data-template="mono"] .header-name, body[data-template="mono"] .section-title, body[data-template="mono"] .exp-dates,
+body[data-template="mono"] .edu-years, body[data-template="mono"] .sidebar-heading { font-family: var(--font-mono); }
+body[data-template="mono"] .header-name { font-weight: 600; letter-spacing: -.01em; }
+body[data-template="mono"] .section-title { border-bottom-style: dashed; }
+body[data-template="mono"] .section-title::before { content: '// '; color: var(--accent); }
+body[data-template="mono"] .section-title::after { display: none; }
+body[data-template="mono"] .exp-dates { background: transparent; border: 1px solid var(--rule); color: var(--accent2); }
+body[data-template="mono"] .exp-bullets li::before { content: '>'; font-family: var(--font-mono); }
+body[data-template="mono"] .skill-dot { border-radius: 1px; }
+
+/* ── 5. CLASSIC — traditional single-column, ATS-friendly, no photo ── */
+body[data-template="classic"] .header-photo-slot { display: none; }
+body[data-template="classic"] .header {
+  flex-direction: column; align-items: center; text-align: center;
+  padding: 32px 24px 22px; min-height: auto; border-bottom: 2px solid var(--rule);
+}
+body[data-template="classic"] .header-info { padding: 0; align-items: center; }
+body[data-template="classic"] .header-name { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; font-size: 29px; letter-spacing: .01em; }
+body[data-template="classic"] .header-title { letter-spacing: .32em; margin-top: 8px; }
+body[data-template="classic"] .body { flex-direction: column; }
+body[data-template="classic"] .sidebar {
+  width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  column-gap: 30px; row-gap: 20px; border-right: none; border-bottom: 1px solid var(--rule);
+  padding: 22px 36px; align-items: start;
+}
+body[data-template="classic"] .sidebar-section { margin-bottom: 0; }
+body[data-template="classic"] .main { width: 100%; padding: 26px 36px 34px; }
+body[data-template="classic"] .page, body[data-template="classic"] .declaration-box, body[data-template="classic"] .exp-dates,
+body[data-template="classic"] .edu-years, body[data-template="classic"] .mode-select, body[data-template="classic"] .skill-bar {
+  border-radius: 2px;
+}
+body[data-template="classic"] .section-title { text-align: left; border-bottom: 2px solid var(--text); color: var(--text); }
+body[data-template="classic"] .section-title::after { display: none; }
+body[data-template="classic"] .exp-dates { background: transparent; border: 1px solid var(--rule); color: var(--text-main); }
+body[data-template="classic"] .exp-header, body[data-template="classic"] .edu-header { flex-wrap: wrap; }
+
+@media print {
+  body[data-template="classic"] .header { padding: 18px 24px 14px !important; }
+  body[data-template="classic"] .sidebar { padding: 14px 26px !important; row-gap: 8px !important; }
+  body[data-template="classic"] .sidebar-section { margin-bottom: 0 !important; }
+  body[data-template="classic"] .main { padding: 16px 26px 18px !important; }
+  body[data-template="classic"] .main-section { margin-bottom: 8px !important; }
+  body[data-template="classic"] .section-title { margin-bottom: 8px !important; padding-bottom: 5px !important; }
+  body[data-template="classic"] .profile-text { line-height: 1.35 !important; }
+}
+
 /* ══════════════════ FLOATING HINT ══════════════════ */
 .edit-hint {
   position: fixed; bottom: 22px; right: 22px;
@@ -453,19 +600,21 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  .body { flex-direction: column; }
-  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--rule); }
-  .header { flex-direction: column; }
+  .body { flex-direction: column !important; }
+  .sidebar { width: 100% !important; border-right: none; border-bottom: 1px solid var(--rule); order: 0 !important; }
+  .main { order: 0 !important; width: 100% !important; }
+  .header { flex-direction: column !important; }
   .header-photo-slot { width: 100%; padding: 20px 20px 12px; align-items: center; }
   .header-name { font-size: 26px; }
   .main { padding: 20px 18px; }
   .toolbar { gap: 6px; padding: 10px 12px; }
   .tb-group { padding: 4px 6px 4px 10px; }
+  .tpl-current-label { display: none; }
 }
 
 /* ── Auto-fit print scaling ── */
 @media print {
-  .page { width: 210mm !important; min-height: 297mm !important; max-height: 297mm !important; overflow: hidden !important; }
+  .page { width: 210mm !important; min-height: 297mm !important; }
   .main { padding: 20px 26px 24px !important; }
   .sidebar { padding: 34px 16px 20px !important; }
   .profile-text, .exp-bullets li, .edu-school, .edu-gpa, .contact-item, .skill-item, .lang-item {
@@ -478,10 +627,32 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
 }
 </style>
 </head>
-<body class="theme-dark">
+<body class="theme-dark" data-template="onyx">
 
 <!-- ══════════════════ TOOLBAR ══════════════════ -->
 <div class="toolbar">
+
+  <div class="tb-group tb-group-template">
+    <span class="tb-label">Template</span>
+    <div class="tpl-swatches">
+      <button class="tpl-swatch active" data-tpl="onyx" title="Onyx — Dark Sidebar Classic" onclick="setTemplate(this)">
+        <span class="tpl-mini"><span class="m-head"></span><span class="m-body"><span class="m-side"></span><span class="m-main"></span></span></span>
+      </button>
+      <button class="tpl-swatch" data-tpl="nordic" title="Nordic — Light &amp; Minimal" onclick="setTemplate(this)">
+        <span class="tpl-mini"><span class="m-head"></span><span class="m-body"><span class="m-side"></span><span class="m-main"></span></span></span>
+      </button>
+      <button class="tpl-swatch" data-tpl="banner" title="Banner — Bold Executive" onclick="setTemplate(this)">
+        <span class="tpl-mini"><span class="m-head"></span><span class="m-body"><span class="m-side"></span><span class="m-main"></span></span></span>
+      </button>
+      <button class="tpl-swatch" data-tpl="mono" title="Mono — Modern Tech" onclick="setTemplate(this)">
+        <span class="tpl-mini"><span class="m-head"></span><span class="m-body"><span class="m-side"></span><span class="m-main"></span></span></span>
+      </button>
+      <button class="tpl-swatch" data-tpl="classic" title="Classic — ATS-Friendly Traditional" onclick="setTemplate(this)">
+        <span class="tpl-mini"><span class="m-head"></span><span class="m-body"><span class="m-side"></span><span class="m-main"></span></span></span>
+      </button>
+    </div>
+    <span class="tpl-current-label" id="tplCurrentLabel">Onyx</span>
+  </div>
 
   <div class="tb-group">
     <span class="tb-label">Theme</span>
@@ -760,6 +931,20 @@ function setTheme(theme) {
   document.body.className = theme === 'light' ? 'theme-white' : 'theme-dark';
   document.getElementById('pill-dark').classList.toggle('active', theme === 'dark');
   document.getElementById('pill-light').classList.toggle('active', theme === 'light');
+}
+
+/* ── Template ── */
+const TEMPLATE_NAMES = {
+  onyx: 'Onyx', nordic: 'Nordic', banner: 'Banner', mono: 'Mono', classic: 'Classic'
+};
+function setTemplate(swatchEl) {
+  const tpl = swatchEl.dataset.tpl;
+  document.body.setAttribute('data-template', tpl);
+  document.querySelectorAll('.tpl-swatch').forEach(s => s.classList.remove('active'));
+  swatchEl.classList.add('active');
+  const label = document.getElementById('tplCurrentLabel');
+  if (label) label.textContent = TEMPLATE_NAMES[tpl] || tpl;
+  autoScaleEducation();
 }
 
 /* ── Accent ── */
