@@ -614,6 +614,7 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
 
 /* ── Auto-fit print scaling ── */
 @media print {
+  #loadingScreen { display: none !important; }
   .page { width: 210mm !important; min-height: 297mm !important; }
   .main { padding: 20px 26px 24px !important; }
   .sidebar { padding: 34px 16px 20px !important; }
@@ -625,9 +626,105 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
   .exp-divider { margin: 6px 0 !important; }
   .skill-item { margin-bottom: 5px !important; gap: 0 !important; }
 }
+
+/* ══════════════════ LOADING SCREEN ══════════════════ */
+#loadingScreen {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 22px;
+  background: #0a0a0b;
+  background-image: radial-gradient(ellipse 1200px 700px at 50% 30%, #1c1812 0%, #0a0a0b 65%);
+  transition: opacity .6s ease, visibility .6s ease;
+}
+#loadingScreen.loaded { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.load-logo {
+  display: flex; align-items: center; gap: 14px;
+  opacity: 0;
+  animation: logoIn .7s .15s cubic-bezier(.2,.8,.2,1) forwards;
+}
+@keyframes logoIn {
+  from { opacity: 0; transform: translateY(10px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.load-mark {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #c8a96e, #8a6f3e);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 22px;
+  color: #161310;
+  letter-spacing: -.02em;
+  box-shadow: 0 8px 28px rgba(200,169,110,.25), inset 0 1px 0 rgba(255,255,255,.25);
+  flex-shrink: 0;
+}
+
+.load-name-block { display: flex; flex-direction: column; }
+
+.load-brand {
+  font-family: var(--font-head);
+  font-size: 26px;
+  font-weight: 700;
+  color: #f2f1ee;
+  letter-spacing: .01em;
+  line-height: 1.1;
+}
+.load-brand span { color: #c8a96e; }
+
+.load-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: #87878d;
+  margin-top: 4px;
+}
+
+.load-bar-track {
+  width: 220px;
+  height: 2px;
+  background: rgba(255,255,255,.08);
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0;
+  animation: logoIn .6s .35s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.load-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #8a6f3e, #c8a96e);
+  border-radius: 2px;
+  transition: width .25s ease-out;
+}
+
+.load-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #5d5d62;
+  opacity: 0;
+  animation: logoIn .6s .45s cubic-bezier(.2,.8,.2,1) forwards;
+}
 </style>
 </head>
 <body class="theme-dark" data-template="onyx">
+
+<!-- ══════════════════ LOADING SCREEN ══════════════════ -->
+<div id="loadingScreen">
+  <div class="load-logo">
+    <div class="load-mark">CL</div>
+    <div class="load-name-block">
+      <div class="load-brand">Carlos <span>Lagman</span></div>
+      <div class="load-sub">Resume Studio</div>
+    </div>
+  </div>
+  <div class="load-bar-track"><div class="load-bar-fill" id="loadBarFill"></div></div>
+  <div class="load-status" id="loadStatus">Preparing your resume…</div>
+</div>
 
 <!-- ══════════════════ TOOLBAR ══════════════════ -->
 <div class="toolbar">
@@ -1131,7 +1228,51 @@ function changePaperSize() {
   if (size === 'Legal')  { root.style.setProperty('--paper-width','216mm'); root.style.setProperty('--paper-height','356mm'); }
 }
 
-document.addEventListener('DOMContentLoaded', () => { autoScaleEducation(); changePaperSize(); });
+document.addEventListener('DOMContentLoaded', () => {
+  autoScaleEducation();
+  changePaperSize();
+  runLoadingSequence();
+});
+
+/* ══════════════════ LOADING SCREEN SEQUENCE ══════════════════ */
+function runLoadingSequence() {
+  const fill   = document.getElementById('loadBarFill');
+  const status = document.getElementById('loadStatus');
+  const screen = document.getElementById('loadingScreen');
+  if (!fill || !screen) return;
+
+  const steps = [
+    { pct: 22,  text: 'Loading fonts…' },
+    { pct: 48,  text: 'Building layout…' },
+    { pct: 74,  text: 'Applying theme…' },
+    { pct: 100, text: 'Ready.' }
+  ];
+
+  let i = 0;
+  const tick = () => {
+    if (i >= steps.length) {
+      setTimeout(() => screen.classList.add('loaded'), 300);
+      setTimeout(() => screen.remove(), 950);
+      return;
+    }
+    fill.style.width = steps[i].pct + '%';
+    status.textContent = steps[i].text;
+    i++;
+    setTimeout(tick, 260);
+  };
+  tick();
+}
+
+/* Safety net: if fonts/images load slower than the sequence, never block past 2.5s */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const screen = document.getElementById('loadingScreen');
+    if (screen && !screen.classList.contains('loaded')) {
+      screen.classList.add('loaded');
+      setTimeout(() => screen.remove(), 700);
+    }
+  }, 2500);
+});
 
 /* ── References ──
    targetId lets this be reused inside "Additional Information" mode too,
