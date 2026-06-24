@@ -1534,6 +1534,7 @@ function handleSidebarModeChange(mode) {
 
   if (mode === 'reference') {
     heading.textContent = 'Reference';
+    heading.style.display = '';
     content.style.display = '';
     content.innerHTML = `
       <div id="reference-list">
@@ -1549,6 +1550,7 @@ function handleSidebarModeChange(mode) {
     `;
   } else if (mode === 'additional') {
     heading.textContent = 'Additional Information';
+    heading.style.display = '';
     content.style.display = '';
     content.innerHTML = `
       <div id="additional-list">
@@ -1566,8 +1568,10 @@ function handleSidebarModeChange(mode) {
     `;
   } else {
     heading.textContent = 'Reference';
+    heading.style.display = 'none';
     content.style.display = 'none';
   }
+  pushHistory(); scheduleAutosave();
 }
 
 function addAdditionalRow() {
