@@ -72,9 +72,39 @@ body {
   transition: background-color .4s ease, color .4s ease;
 }
 
+/* ══════════════════ TOP BAR ══════════════════ */
+.topbar {
+  position: sticky; top: 0; z-index: 201;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 22px; gap: 16px;
+  background: rgba(8,8,9,.88);
+  backdrop-filter: blur(18px) saturate(150%);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+body.theme-white .topbar { background: rgba(255,255,255,.88); border-bottom-color: rgba(0,0,0,.05); }
+
+.topbar-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.topbar-mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(145deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-weight: 800; font-size: 11.5px;
+  color: #161310; flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(200,169,110,.25);
+  transition: background .3s;
+}
+.topbar-name {
+  font-family: var(--font-head); font-weight: 600; font-size: 14px;
+  color: var(--text, #eee); letter-spacing: -.01em;
+}
+body.theme-white .topbar-name { color: #222; }
+.topbar-brand:hover .topbar-name { color: var(--accent); }
+
+.topbar-right { display: flex; align-items: center; gap: 14px; }
+
 /* ══════════════════ TOOLBAR ══════════════════ */
 .toolbar {
-  position: sticky; top: 0; z-index: 200;
+  position: sticky; top: 45px; z-index: 200;
   display: flex; align-items: center; justify-content: center;
   gap: 8px; padding: 12px 20px;
   background: rgba(10,10,11,.78);
@@ -589,7 +619,7 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   html, body { width: 210mm; margin: 0; padding: 0; background: #fff !important; }
-  .toolbar, .edit-hint, .rm-btn, .rm-entry-btn, .add-row-btn, .add-exp-btn, .gpa-rm-btn, .skill-bar, .mode-select-wrap { display: none !important; }
+  .toolbar, .topbar, .edit-hint, .rm-btn, .rm-entry-btn, .add-row-btn, .add-exp-btn, .gpa-rm-btn, .skill-bar, .mode-select-wrap, #toastStack, #cmdkOverlay { display: none !important; }
   .page-stage { padding: 0; }
   .page { width: 210mm; max-width: 210mm; margin: 0; box-shadow: none; border: none; border-radius: 0; animation: none; opacity: 1; transform: none; }
   .body { height: auto; overflow: visible; }
@@ -607,9 +637,15 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
   .header-photo-slot { width: 100%; padding: 20px 20px 12px; align-items: center; }
   .header-name { font-size: 26px; }
   .main { padding: 20px 18px; }
-  .toolbar { gap: 6px; padding: 10px 12px; }
+  .toolbar { gap: 6px; padding: 10px 12px; top: 41px; }
   .tb-group { padding: 4px 6px 4px 10px; }
   .tpl-current-label { display: none; }
+  .topbar { padding: 8px 12px; gap: 8px; }
+  .topbar-name { display: none; }
+  .topbar-right { gap: 8px; }
+  .save-indicator span:not(.save-dot) { display: none; }
+  .tb-group-score .score-text { display: none; }
+  .tb-group-score { padding: 4px; }
 }
 
 /* ── Auto-fit print scaling ── */
@@ -627,7 +663,126 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
   .skill-item { margin-bottom: 5px !important; gap: 0 !important; }
 }
 
-/* ══════════════════ LOADING SCREEN ══════════════════ */
+/* ══════════════════ TOAST NOTIFICATIONS ══════════════════ */
+#toastStack {
+  position: fixed; bottom: 22px; left: 22px; z-index: 9000;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 9px;
+  background: rgba(20,20,22,.92); backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #e8e8e8; font-size: 12.5px; font-weight: 500;
+  padding: 10px 16px; border-radius: 11px;
+  box-shadow: 0 10px 30px -8px rgba(0,0,0,.5);
+  opacity: 0; transform: translateY(8px) scale(.96);
+  animation: toastIn .35s cubic-bezier(.16,1,.3,1) forwards;
+  max-width: 320px;
+}
+body.theme-white .toast { background: rgba(255,255,255,.95); border-color: rgba(0,0,0,.08); color: #222; }
+.toast.leaving { animation: toastOut .25s ease forwards; }
+@keyframes toastIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(6px) scale(.96); } }
+.toast-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.toast-icon svg { width: 100%; height: 100%; }
+.toast.success .toast-icon { color: #6ee87a; }
+.toast.info .toast-icon { color: var(--accent); }
+.toast.warn .toast-icon { color: #f9c46b; }
+
+/* ══════════════════ COMPLETENESS METER ══════════════════ */
+.tb-group-score {
+  display: flex; align-items: center; gap: 9px;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 30px; padding: 6px 16px 6px 6px; cursor: default;
+}
+body.theme-white .tb-group-score { background: rgba(0,0,0,.025); border-color: rgba(0,0,0,.06); }
+.score-ring { width: 28px; height: 28px; flex-shrink: 0; transform: rotate(-90deg); }
+.score-ring circle { fill: none; stroke-width: 3; }
+.score-ring .ring-bg { stroke: rgba(255,255,255,.08); }
+body.theme-white .score-ring .ring-bg { stroke: rgba(0,0,0,.08); }
+.score-ring .ring-fill { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset .6s cubic-bezier(.16,1,.3,1), stroke .4s; }
+.score-text { display: flex; flex-direction: column; line-height: 1.2; }
+.score-pct { font-size: 12px; font-weight: 700; color: var(--text, #ddd); }
+body.theme-white .score-pct { color: #333; }
+.score-label { font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* ══════════════════ KEYBOARD SHORTCUT HINTS ══════════════════ */
+kbd {
+  display: inline-block; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 4px; padding: 1px 5px; font-family: var(--font-mono); font-size: 10px;
+  color: #ccc; box-shadow: 0 1px 0 rgba(255,255,255,.06);
+}
+body.theme-white kbd { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.1); color: #444; }
+
+/* ══════════════════ UNDO/REDO BUTTONS ══════════════════ */
+.history-btns { display: flex; gap: 2px; }
+.history-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: transparent; border: none; color: var(--muted, #888);
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.history-btn:hover:not(:disabled) { background: rgba(255,255,255,.08); color: var(--text, #ddd); }
+body.theme-white .history-btn:hover:not(:disabled) { background: rgba(0,0,0,.06); }
+.history-btn:disabled { opacity: .3; cursor: default; }
+.history-btn svg { width: 14px; height: 14px; }
+
+/* ══════════════════ FOCUS-VISIBLE ACCESSIBILITY ══════════════════ */
+button:focus-visible, [contenteditable]:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+.theme-pill:focus-visible, .swatch:focus-visible, .tpl-swatch:focus-visible { outline-offset: 2px; }
+
+/* ══════════════════ COMMAND PALETTE ══════════════════ */
+#cmdkOverlay {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 14vh;
+}
+#cmdkOverlay.open { display: flex; animation: cmdkFadeIn .15s ease; }
+@keyframes cmdkFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cmdk-box {
+  width: 480px; max-width: 90vw;
+  background: #161618; border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.7);
+  overflow: hidden;
+  opacity: 0; transform: translateY(-8px) scale(.98);
+  animation: cmdkIn .2s cubic-bezier(.16,1,.3,1) forwards;
+}
+body.theme-white .cmdk-box { background: #fff; border-color: rgba(0,0,0,.1); }
+@keyframes cmdkIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+.cmdk-input-wrap { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+body.theme-white .cmdk-input-wrap { border-color: rgba(0,0,0,.08); }
+.cmdk-input-wrap svg { width: 16px; height: 16px; color: var(--muted); flex-shrink: 0; }
+#cmdkInput {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text, #eee); font-size: 14px; font-family: var(--font-body);
+}
+body.theme-white #cmdkInput { color: #222; }
+.cmdk-list { max-height: 320px; overflow-y: auto; padding: 6px; }
+.cmdk-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text, #ddd);
+}
+body.theme-white .cmdk-item { color: #333; }
+.cmdk-item.active, .cmdk-item:hover { background: var(--accent-soft); }
+.cmdk-item svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+.cmdk-item .cmdk-hint { margin-left: auto; font-size: 10px; color: var(--muted); }
+.cmdk-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 12.5px; }
+
+/* ══════════════════ SAVE STATUS INDICATOR ══════════════════ */
+.save-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px; color: var(--muted);
+  padding: 0 4px; white-space: nowrap;
+}
+.save-dot { width: 6px; height: 6px; border-radius: 50%; background: #6ee87a; flex-shrink: 0; }
+.save-dot.saving { background: var(--accent); animation: saveBlink 1s ease infinite; }
+@keyframes saveBlink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
 #loadingScreen {
   position: fixed; inset: 0; z-index: 9999;
   display: flex; align-items: center; justify-content: center;
@@ -660,6 +815,19 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
   letter-spacing: -.02em;
   box-shadow: 0 8px 28px rgba(200,169,110,.25), inset 0 1px 0 rgba(255,255,255,.25);
   flex-shrink: 0;
+  position: relative;
+}
+.load-mark::after {
+  content: '';
+  position: absolute; inset: -8px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(200,169,110,.3);
+  animation: markPulse 2s ease-out infinite;
+}
+@keyframes markPulse {
+  0%   { transform: scale(.92); opacity: .9; }
+  70%  { transform: scale(1.18); opacity: 0; }
+  100% { opacity: 0; }
 }
 
 .load-name-block { display: flex; flex-direction: column; }
@@ -726,8 +894,48 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
   <div class="load-status" id="loadStatus">Preparing your resume…</div>
 </div>
 
+<!-- ══════════════════ TOP BAR (brand + utilities) ══════════════════ -->
+<div class="topbar">
+  <div class="topbar-brand" onclick="openCmdk()" title="Open command palette">
+    <div class="topbar-mark">CL</div>
+    <span class="topbar-name">Resume Studio</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="history-btns">
+      <button class="history-btn" id="undoBtn" onclick="undoAction()" title="Undo (Ctrl+Z)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 9"/></svg>
+      </button>
+      <button class="history-btn" id="redoBtn" onclick="redoAction()" title="Redo (Ctrl+Shift+Z)" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13a9 9 0 1 1-3-7.7L21 9"/></svg>
+      </button>
+    </div>
+
+    <div class="save-indicator" id="saveIndicator" title="Autosaved locally in this browser">
+      <span class="save-dot" id="saveDot"></span>
+      <span id="saveText">Saved</span>
+    </div>
+
+    <div class="tb-group-score" title="How complete your resume is">
+      <svg class="score-ring" viewBox="0 0 36 36">
+        <circle class="ring-bg" cx="18" cy="18" r="15"></circle>
+        <circle class="ring-fill" id="scoreRing" cx="18" cy="18" r="15" stroke-dasharray="94.2" stroke-dashoffset="94.2"></circle>
+      </svg>
+      <div class="score-text">
+        <span class="score-pct" id="scorePct">0%</span>
+        <span class="score-label">Complete</span>
+      </div>
+    </div>
+
+    <button class="history-btn" onclick="openCmdk()" title="Command palette (Ctrl+K)" style="width:auto;padding:0 9px;gap:6px;display:flex;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+</div>
+
 <!-- ══════════════════ TOOLBAR ══════════════════ -->
-<div class="toolbar">
+<div class="toolbar" role="toolbar" aria-label="Resume styling controls">
 
   <div class="tb-group tb-group-template">
     <span class="tb-label">Template</span>
@@ -917,7 +1125,7 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
     <div class="main">
 
       <div class="main-section">
-        <div class="section-title">Profile</div>
+        <div class="section-title">Objective</div>
         <p class="profile-text" contenteditable="true">Results-driven Creative Head with over a decade of experience leading brand strategy, visual identity development, and cross-functional creative teams. Adept at translating business objectives into compelling narratives that resonate with global audiences. Proven track record of delivering award-winning campaigns on time and within budget, while fostering a culture of innovation and collaboration.</p>
       </div>
 
@@ -1018,8 +1226,23 @@ body.theme-white .edit-hint { background: rgba(255,255,255,.85); border-color: r
 
 <div class="edit-hint">
   <div class="edit-hint-dot"></div>
-  <span>Click text to edit · Hover rows to remove · + to add</span>
+  <span>Click text to edit · <kbd>⌘K</kbd> for commands · <kbd>⌘Z</kbd> to undo</span>
   <button onclick="this.parentElement.style.display='none'" title="Dismiss">×</button>
+</div>
+
+<!-- ══════════════════ TOASTS ══════════════════ -->
+<div id="toastStack" aria-live="polite"></div>
+
+<!-- ══════════════════ COMMAND PALETTE ══════════════════ -->
+<div id="cmdkOverlay" onclick="if(event.target===this) closeCmdk()">
+  <div class="cmdk-box" role="dialog" aria-label="Command palette">
+    <div class="cmdk-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="cmdkInput" type="text" placeholder="Type a command…" autocomplete="off" oninput="filterCmdk()" onkeydown="cmdkKeydown(event)">
+      <kbd>Esc</kbd>
+    </div>
+    <div class="cmdk-list" id="cmdkList"></div>
+  </div>
 </div>
 
 <script>
@@ -1028,6 +1251,7 @@ function setTheme(theme) {
   document.body.className = theme === 'light' ? 'theme-white' : 'theme-dark';
   document.getElementById('pill-dark').classList.toggle('active', theme === 'dark');
   document.getElementById('pill-light').classList.toggle('active', theme === 'light');
+  pushHistory(); scheduleAutosave();
 }
 
 /* ── Template ── */
@@ -1042,6 +1266,8 @@ function setTemplate(swatchEl) {
   const label = document.getElementById('tplCurrentLabel');
   if (label) label.textContent = TEMPLATE_NAMES[tpl] || tpl;
   autoScaleEducation();
+  pushHistory(); scheduleAutosave();
+  showToast(`Switched to ${TEMPLATE_NAMES[tpl] || tpl} template`, 'success', 1800);
 }
 
 /* ── Accent ── */
@@ -1050,10 +1276,12 @@ function setAccent(swatchEl) {
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
   swatchEl.classList.add('active');
   document.getElementById('customColor').value = swatchEl.dataset.color;
+  pushHistory(); scheduleAutosave();
 }
 function setCustomAccent(color) {
   applyAccent(color);
   document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  pushHistory(); scheduleAutosave();
 }
 function applyAccent(color) {
   document.documentElement.style.setProperty('--accent', color);
@@ -1065,11 +1293,14 @@ function applyAccent(color) {
 function triggerPhotoUpload() { document.getElementById('photoInput').click(); }
 function handlePhoto(e) {
   const file = e.target.files[0]; if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Please choose an image file', 'warn'); return; }
   const reader = new FileReader();
   reader.onload = ev => {
     const img = document.getElementById('photoImg');
     img.src = ev.target.result; img.style.display = 'block';
     document.getElementById('photoPlaceholder').style.display = 'none';
+    pushHistory(); scheduleAutosave(); recalcScore();
+    showToast('Photo updated', 'success', 1800);
   };
   reader.readAsDataURL(file);
 }
@@ -1200,6 +1431,7 @@ window.addEventListener('afterprint', () => {
     el.setAttribute('contenteditable', el.dataset.ce);
     delete el.dataset.ce;
   });
+  showToast('Ready to save — choose "Save as PDF" in the print dialog', 'info', 3000);
 });
 
 function removeGPA(btn) {
@@ -1226,6 +1458,7 @@ function changePaperSize() {
   if (size === 'A4')     { root.style.setProperty('--paper-width','210mm'); root.style.setProperty('--paper-height','297mm'); }
   if (size === 'Letter') { root.style.setProperty('--paper-width','216mm'); root.style.setProperty('--paper-height','279mm'); }
   if (size === 'Legal')  { root.style.setProperty('--paper-width','216mm'); root.style.setProperty('--paper-height','356mm'); }
+  if (typeof pushHistory === 'function') { pushHistory(); scheduleAutosave(); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1354,7 +1587,298 @@ function toggleDeclaration() {
   const show = el.style.display === 'none';
   el.style.display = show ? 'block' : 'none';
   btn.textContent = show ? '− Remove declaration' : '+ Add declaration';
+  pushHistory();
+  scheduleAutosave();
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════ */
+const TOAST_ICONS = {
+  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="8.01"/><line x1="12" y1="11" x2="12" y2="16"/></svg>',
+  warn:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>'
+};
+function showToast(message, type = 'info', duration = 2400) {
+  const stack = document.getElementById('toastStack');
+  if (!stack) return;
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${TOAST_ICONS[type] || TOAST_ICONS.info}</span><span>${message}</span>`;
+  stack.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 260);
+  }, duration);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UNDO / REDO  (snapshot-based, scoped to the resume page only)
+   ═══════════════════════════════════════════════════════════════ */
+let historyStack = [];
+let historyIndex = -1;
+let historySuspended = false;
+const HISTORY_LIMIT = 50;
+
+function snapshotState() {
+  const pageEl = document.getElementById('resumePage');
+  return {
+    html: pageEl.innerHTML,
+    theme: document.body.className,
+    template: document.body.getAttribute('data-template'),
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+  };
+}
+function pushHistory() {
+  if (historySuspended) return;
+  const snap = snapshotState();
+  // avoid pushing duplicate consecutive snapshots
+  if (historyIndex >= 0 && historyStack[historyIndex] && historyStack[historyIndex].html === snap.html
+      && historyStack[historyIndex].theme === snap.theme && historyStack[historyIndex].template === snap.template
+      && historyStack[historyIndex].accent === snap.accent) return;
+  historyStack = historyStack.slice(0, historyIndex + 1);
+  historyStack.push(snap);
+  if (historyStack.length > HISTORY_LIMIT) historyStack.shift();
+  historyIndex = historyStack.length - 1;
+  updateHistoryButtons();
+}
+function restoreSnapshot(snap) {
+  historySuspended = true;
+  document.getElementById('resumePage').innerHTML = snap.html;
+  document.body.className = snap.theme;
+  document.body.setAttribute('data-template', snap.template);
+  applyAccent(snap.accent);
+  document.getElementById('pill-dark').classList.toggle('active', snap.theme === 'theme-dark');
+  document.getElementById('pill-light').classList.toggle('active', snap.theme === 'theme-white');
+  document.querySelectorAll('.tpl-swatch').forEach(s => s.classList.toggle('active', s.dataset.tpl === snap.template));
+  const label = document.getElementById('tplCurrentLabel');
+  if (label) label.textContent = TEMPLATE_NAMES[snap.template] || snap.template;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('active', s.dataset.color === snap.accent));
+  autoScaleEducation();
+  recalcScore();
+  historySuspended = false;
+}
+function undoAction() {
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  restoreSnapshot(historyStack[historyIndex]);
+  updateHistoryButtons();
+  showToast('Undone', 'info', 1400);
+  scheduleAutosave();
+}
+function redoAction() {
+  if (historyIndex >= historyStack.length - 1) return;
+  historyIndex++;
+  restoreSnapshot(historyStack[historyIndex]);
+  updateHistoryButtons();
+  showToast('Redone', 'info', 1400);
+  scheduleAutosave();
+}
+function updateHistoryButtons() {
+  document.getElementById('undoBtn').disabled = historyIndex <= 0;
+  document.getElementById('redoBtn').disabled = historyIndex >= historyStack.length - 1;
+}
+
+/* Debounced history capture while typing in contenteditable fields */
+let historyDebounce;
+document.addEventListener('input', (e) => {
+  if (e.target.closest && e.target.closest('#resumePage')) {
+    clearTimeout(historyDebounce);
+    historyDebounce = setTimeout(() => { pushHistory(); scheduleAutosave(); recalcScore(); }, 600);
+  }
+});
+/* Immediate snapshot on structural changes (button clicks that add/remove rows) */
+document.getElementById('resumePage').addEventListener('click', (e) => {
+  if (e.target.closest('button')) {
+    setTimeout(() => { pushHistory(); scheduleAutosave(); recalcScore(); }, 50);
+  }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTOSAVE  (localStorage — this is a standalone downloaded file,
+   not a sandboxed artifact, so persistence here is expected & safe)
+   ═══════════════════════════════════════════════════════════════ */
+const STORAGE_KEY = 'resumeStudio_v1';
+let autosaveTimer;
+function scheduleAutosave() {
+  const dot = document.getElementById('saveDot');
+  const txt = document.getElementById('saveText');
+  if (dot) { dot.classList.add('saving'); }
+  if (txt) { txt.textContent = 'Saving…'; }
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => {
+    try {
+      const snap = snapshotState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snap));
+      if (dot) dot.classList.remove('saving');
+      if (txt) txt.textContent = 'Saved';
+    } catch (err) {
+      if (txt) txt.textContent = 'Save failed';
+    }
+  }, 700);
+}
+function loadAutosave() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const snap = JSON.parse(raw);
+    if (!snap || !snap.html) return false;
+    restoreSnapshot(snap);
+    return true;
+  } catch (err) { return false; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ATS COMPLETENESS SCORE
+   ═══════════════════════════════════════════════════════════════ */
+function textOf(sel) {
+  const el = document.querySelector(sel);
+  return el ? el.textContent.trim() : '';
+}
+function recalcScore() {
+  const checks = [
+    textOf('.header-name').length > 3,
+    textOf('.header-title').length > 2,
+    document.querySelectorAll('.contact-item span[contenteditable]').length > 0 &&
+      [...document.querySelectorAll('.contact-item span[contenteditable]')].some(s => s.textContent.trim().length > 4),
+    textOf('.profile-text').length > 40,
+    document.querySelectorAll('#exp-list .exp-entry').length > 0,
+    document.querySelectorAll('#exp-list .exp-bullets li').length > 0,
+    document.querySelectorAll('#edu-list .edu-entry').length > 0,
+    document.querySelectorAll('#skills-list .skill-item').length >= 3,
+    document.querySelectorAll('#lang-list .lang-item').length > 0,
+    document.getElementById('photoImg') && document.getElementById('photoImg').style.display !== 'none'
+  ];
+  const passed = checks.filter(Boolean).length;
+  const pct = Math.round((passed / checks.length) * 100);
+
+  const ring = document.getElementById('scoreRing');
+  const pctEl = document.getElementById('scorePct');
+  if (ring && pctEl) {
+    const circumference = 94.2;
+    const offset = circumference - (circumference * pct / 100);
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = pct >= 80 ? '#6ee87a' : pct >= 50 ? 'var(--accent)' : '#f96b6b';
+    pctEl.textContent = pct + '%';
+  }
+  return pct;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMMAND PALETTE
+   ═══════════════════════════════════════════════════════════════ */
+const CMDK_ICON_WAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 4 1.5 1.5"/><path d="M2 22l9-9"/><path d="M11.5 7.5 9 5l1-1 2.5 2.5L15 4l-2.5 2.5L15 9l-1 1-2.5-2.5z"/></svg>';
+const CMDK_COMMANDS = [
+  { label: 'Switch to Dark theme',  hint: 'Theme',  icon: true, run: () => setTheme('dark') },
+  { label: 'Switch to Light theme', hint: 'Theme',  icon: true, run: () => setTheme('light') },
+  { label: 'Template: Onyx',    hint: 'Template', run: () => setTemplateByName('onyx') },
+  { label: 'Template: Nordic',  hint: 'Template', run: () => setTemplateByName('nordic') },
+  { label: 'Template: Banner',  hint: 'Template', run: () => setTemplateByName('banner') },
+  { label: 'Template: Mono',    hint: 'Template', run: () => setTemplateByName('mono') },
+  { label: 'Template: Classic', hint: 'Template', run: () => setTemplateByName('classic') },
+  { label: 'Add work experience', hint: 'Insert', run: () => { addExperience(); } },
+  { label: 'Add education',       hint: 'Insert', run: () => { addEducation(); } },
+  { label: 'Add skill',           hint: 'Insert', run: () => { addSkill(); } },
+  { label: 'Add language',        hint: 'Insert', run: () => { addLanguage(); } },
+  { label: 'Change photo',        hint: 'Insert', run: () => triggerPhotoUpload() },
+  { label: 'Save as PDF',         hint: '⌘P', run: () => window.print() },
+  { label: 'Undo',                hint: '⌘Z', run: () => undoAction() },
+  { label: 'Redo',                hint: '⌘⇧Z', run: () => redoAction() },
+  { label: 'Set paper size: A4',     hint: 'Paper', run: () => { document.getElementById('paperSize').value = 'A4'; changePaperSize(); } },
+  { label: 'Set paper size: Letter', hint: 'Paper', run: () => { document.getElementById('paperSize').value = 'Letter'; changePaperSize(); } },
+  { label: 'Set paper size: Legal',  hint: 'Paper', run: () => { document.getElementById('paperSize').value = 'Legal'; changePaperSize(); } },
+  { label: 'Reset to default resume', hint: 'Danger', run: () => confirmReset() },
+];
+function confirmReset() {
+  if (confirm('This will erase all your edits and restore the default resume. Continue?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+}
+function setTemplateByName(name) {
+  const sw = document.querySelector(`.tpl-swatch[data-tpl="${name}"]`);
+  if (sw) setTemplate(sw);
+}
+let cmdkActiveIndex = 0;
+let cmdkFiltered = CMDK_COMMANDS;
+function openCmdk() {
+  const overlay = document.getElementById('cmdkOverlay');
+  overlay.classList.add('open');
+  cmdkFiltered = CMDK_COMMANDS;
+  cmdkActiveIndex = 0;
+  renderCmdkList();
+  const input = document.getElementById('cmdkInput');
+  input.value = '';
+  setTimeout(() => input.focus(), 30);
+}
+function closeCmdk() {
+  document.getElementById('cmdkOverlay').classList.remove('open');
+}
+function filterCmdk() {
+  const q = document.getElementById('cmdkInput').value.toLowerCase();
+  cmdkFiltered = CMDK_COMMANDS.filter(c => c.label.toLowerCase().includes(q));
+  cmdkActiveIndex = 0;
+  renderCmdkList();
+}
+function renderCmdkList() {
+  const list = document.getElementById('cmdkList');
+  if (!cmdkFiltered.length) {
+    list.innerHTML = '<div class="cmdk-empty">No matching commands</div>';
+    return;
+  }
+  list.innerHTML = cmdkFiltered.map((c, i) => `
+    <div class="cmdk-item ${i === cmdkActiveIndex ? 'active' : ''}" data-idx="${i}" onclick="runCmdkItem(${i})">
+      ${CMDK_ICON_WAND}<span>${c.label}</span><span class="cmdk-hint">${c.hint}</span>
+    </div>
+  `).join('');
+}
+function runCmdkItem(i) {
+  const cmd = cmdkFiltered[i];
+  if (!cmd) return;
+  closeCmdk();
+  cmd.run();
+  showToast(cmd.label, 'success', 1600);
+}
+function cmdkKeydown(e) {
+  if (e.key === 'Escape') { closeCmdk(); return; }
+  if (e.key === 'ArrowDown') { e.preventDefault(); cmdkActiveIndex = Math.min(cmdkActiveIndex + 1, cmdkFiltered.length - 1); renderCmdkList(); return; }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); cmdkActiveIndex = Math.max(cmdkActiveIndex - 1, 0); renderCmdkList(); return; }
+  if (e.key === 'Enter')     { e.preventDefault(); runCmdkItem(cmdkActiveIndex); return; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GLOBAL KEYBOARD SHORTCUTS
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  // Cmd/Ctrl+K -> command palette
+  if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmdk(); return; }
+  // Cmd/Ctrl+Z -> undo, Shift -> redo
+  if (mod && e.key.toLowerCase() === 'z' && !document.getElementById('cmdkOverlay').classList.contains('open')) {
+    e.preventDefault();
+    if (e.shiftKey) redoAction(); else undoAction();
+    return;
+  }
+  // Escape closes command palette
+  if (e.key === 'Escape') closeCmdk();
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOTSTRAP
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  autoScaleEducation();
+  changePaperSize();
+  runLoadingSequence();
+
+  const restored = loadAutosave();
+  pushHistory(); // baseline snapshot (either restored or default content)
+  recalcScore();
+
+  if (restored) {
+    setTimeout(() => showToast('Welcome back — your resume was restored', 'success', 3200), 1100);
+  }
+});
 </script>
 </body>
 </html>
