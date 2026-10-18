@@ -1390,194 +1390,480 @@ function handleAppImport(e) {
   });
 }
 
-function showImportProgress(title, sub) {
+function setImportProgress(title, sub) {
   document.getElementById('impTitle').textContent = title;
-  document.getElementById('impSub').textContent = sub;
+  document.getElementById('impSub').textContent   = sub;
+}
+function showImportProgress(title, sub) {
+  setImportProgress(title, sub);
   document.getElementById('importProgress').classList.add('active');
 }
 function hideImportProgress() { document.getElementById('importProgress').classList.remove('active'); }
 
-// ─── File parser ───
+// ════════════════════════════════════════════════════════
+//  FILE DISPATCHER
+// ════════════════════════════════════════════════════════
 function parseFile(file, onSuccess, onError) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (ext === 'pdf') parsePDF(file, onSuccess, onError);
-  else if (ext === 'docx' || ext === 'doc') parseDOCX(file, onSuccess, onError);
-  else if (['jpg','jpeg','png','webp'].includes(ext)) parseImage(file, onSuccess, onError);
-  else onError('Unsupported format');
+  if (ext === 'pdf')                           parsePDF(file, onSuccess, onError);
+  else if (ext === 'docx' || ext === 'doc')    parseDOCX(file, onSuccess, onError);
+  else if (/^(jpg|jpeg|png|webp|bmp)$/.test(ext)) parseImageOCR(file, onSuccess, onError);
+  else onError('Unsupported format: ' + ext);
 }
 
+// ════════════════════════════════════════════════════════
+//  PDF  ─  preserve line structure by sorting text items
+//           by Y-position so logical lines are grouped
+// ════════════════════════════════════════════════════════
 async function parsePDF(file, onSuccess, onError) {
   try {
     if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
-    const ab = await file.arrayBuffer();
+    const ab  = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-    let fullText = '';
-    for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
-      const page = await pdf.getPage(i);
-      const tc = await page.getTextContent();
-      fullText += tc.items.map(it => it.str).join(' ') + '\n';
+    let allLines = [];
+
+    for (let p = 1; p <= Math.min(pdf.numPages, 6); p++) {
+      setImportProgress(`Reading PDF… page ${p} of ${Math.min(pdf.numPages,6)}`, 'Extracting text structure');
+      const page = await pdf.getPage(p);
+      const tc   = await page.getTextContent({ normalizeWhitespace: false });
+
+      // Group items into visual lines by their Y coordinate (±2px tolerance)
+      const lineMap = new Map();
+      for (const item of tc.items) {
+        const y = Math.round(item.transform[5]);
+        const bucket = [...lineMap.keys()].find(k => Math.abs(k - y) < 3);
+        if (bucket !== undefined) lineMap.get(bucket).push(item);
+        else lineMap.set(y, [item]);
+      }
+      // Sort lines top-to-bottom, words left-to-right
+      const sorted = [...lineMap.entries()]
+        .sort((a, b) => b[0] - a[0])  // PDF Y is bottom-up
+        .map(([, items]) =>
+          items.sort((a, b) => a.transform[4] - b.transform[4])
+               .map(it => it.str).join(' ').trim()
+        )
+        .filter(Boolean);
+
+      allLines.push(...sorted, '__PAGE_BREAK__');
     }
-    onSuccess(extractResumeData(fullText));
+    onSuccess(extractResumeData(allLines.join('\n')));
   } catch(e) { onError(e); }
 }
 
+// ════════════════════════════════════════════════════════
+//  DOCX  ─  mammoth gives us a clean paragraph list
+// ════════════════════════════════════════════════════════
 async function parseDOCX(file, onSuccess, onError) {
   try {
-    if (typeof mammoth === 'undefined') throw new Error('mammoth not loaded');
-    const ab = await file.arrayBuffer();
+    if (typeof mammoth === 'undefined') throw new Error('mammoth.js not loaded');
+    setImportProgress('Reading Word document…', 'Extracting paragraphs');
+    const ab     = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: ab });
     onSuccess(extractResumeData(result.value));
   } catch(e) { onError(e); }
 }
 
-function parseImage(file, onSuccess, onError) {
-  // For images: load as photo + try basic OCR via canvas (text detection is limited without Tesseract)
-  const reader = new FileReader();
-  reader.onload = ev => {
-    // Set as profile photo
+// ════════════════════════════════════════════════════════
+//  IMAGE  ─  Tesseract.js for real OCR
+// ════════════════════════════════════════════════════════
+async function parseImageOCR(file, onSuccess, onError) {
+  // Load Tesseract on demand (lazy)
+  if (typeof Tesseract === 'undefined') {
+    setImportProgress('Loading OCR engine…', 'First-time download ~8 MB');
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  try {
+    const dataURL = await fileToDataURL(file);
+    setImportProgress('Running OCR…', 'Recognising text in image');
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text')
+          setImportProgress('Running OCR…', `${Math.round((m.progress||0)*100)}% complete`);
+      }
+    });
+    const { data: { text } } = await worker.recognize(dataURL);
+    await worker.terminate();
+
+    // Also set the image as the profile photo
     const img = document.getElementById('photoImg');
-    img.src = ev.target.result; img.style.display = 'block';
+    img.src = dataURL; img.style.display = 'block';
     document.getElementById('photoPlaceholder').style.display = 'none';
-    showToast('Image set as your photo. Edit fields manually.', 'info', 4000);
-    onSuccess({ isImageOnly: true });
-  };
-  reader.onerror = onError;
-  reader.readAsDataURL(file);
+
+    onSuccess(extractResumeData(text));
+  } catch(e) { onError(e); }
 }
 
-// ─── Resume data extractor ───
-function extractResumeData(text) {
-  const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
-  const data = { name:'', title:'', phone:'', email:'', location:'', objective:'', skills:[], languages:[], experience:[], education:[], rawLines: lines };
+function fileToDataURL(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
 
-  // Email
-  const emailM = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
-  if (emailM) data.email = emailM[0];
-  // Phone
-  const phoneM = text.match(/(\+?\d[\d\s\-().]{7,16}\d)/);
-  if (phoneM) data.phone = phoneM[0].trim();
-  // Name heuristic: first non-empty line that looks like a name (2-5 words, title case, no email/URL)
-  for (const line of lines.slice(0, 8)) {
-    if (line.length < 4 || line.includes('@') || line.includes('http') || /^\d/.test(line)) continue;
-    const wordCount = line.split(/\s+/).length;
-    if (wordCount >= 2 && wordCount <= 5 && /^[A-Z]/.test(line)) { data.name = line; break; }
+// ════════════════════════════════════════════════════════
+//  SMART RESUME DATA EXTRACTOR
+//  Works line-by-line; detects section headings first,
+//  then parses each section's content block.
+// ════════════════════════════════════════════════════════
+function extractResumeData(rawText) {
+  // Clean up and split into lines
+  const lines = rawText
+    .split(/[\n\r]+/)
+    .map(l => l.replace(/\s{2,}/g, ' ').trim())
+    .filter(l => l && l !== '__PAGE_BREAK__');
+
+  const data = {
+    name:'', title:'', phone:'', email:'', linkedin:'', location:'',
+    website:'', objective:'', skills:[], languages:[],
+    experience:[], education:[], certifications:[], awards:[]
+  };
+
+  // ── Contact info via regex (scan entire text) ──
+  const fullText = lines.join('\n');
+  const emailM   = fullText.match(/[\w.+\-]+@[\w\-]+\.[\w.]{2,}/);
+  if (emailM) data.email = emailM[0].trim();
+
+  const phoneM = fullText.match(/(\+?[\d][\d\s\-().]{6,18}[\d])/);
+  if (phoneM) {
+    const p = phoneM[0].replace(/\s+/g,' ').trim();
+    if (p.replace(/\D/g,'').length >= 7) data.phone = p;
   }
-  // Title heuristic: short line after name
-  const nameIdx = lines.indexOf(data.name);
-  if (nameIdx >= 0 && nameIdx + 1 < lines.length) {
-    const nextLine = lines[nameIdx + 1];
-    if (nextLine.length < 60 && !nextLine.includes('@')) data.title = nextLine;
-  }
-  // Objective / Summary
-  const objIdx = lines.findIndex(l => /objective|summary|profile|about/i.test(l));
-  if (objIdx >= 0 && objIdx + 1 < lines.length) {
-    let obj = '';
-    for (let i = objIdx + 1; i < Math.min(objIdx + 5, lines.length); i++) {
-      if (/experience|education|skill|language|contact|reference/i.test(lines[i])) break;
-      obj += lines[i] + ' ';
-    }
-    data.objective = obj.trim();
-  }
-  // Skills
-  const skillIdx = lines.findIndex(l => /^skills?$/i.test(l));
-  if (skillIdx >= 0) {
-    for (let i = skillIdx + 1; i < Math.min(skillIdx + 14, lines.length); i++) {
-      if (/experience|education|language|objective|summary|contact/i.test(lines[i])) break;
-      const skillLine = lines[i].replace(/[•·▪▸\-–]/g, '').trim();
-      if (skillLine.length > 1 && skillLine.length < 40) data.skills.push(skillLine);
-    }
-  }
-  // Languages
-  const langIdx = lines.findIndex(l => /^languages?$/i.test(l));
-  if (langIdx >= 0) {
-    for (let i = langIdx + 1; i < Math.min(langIdx + 8, lines.length); i++) {
-      if (/experience|education|skill|reference/i.test(lines[i])) break;
-      const lLine = lines[i].replace(/[•·▪▸\-–]/g, '').trim();
-      if (lLine.length > 1 && lLine.length < 30) data.languages.push(lLine);
-    }
-  }
-  // Experience blocks
-  const expIdx = lines.findIndex(l => /experience|employment|work history/i.test(l));
-  if (expIdx >= 0) {
-    const block = []; let hitting = false;
-    for (let i = expIdx + 1; i < lines.length; i++) {
-      if (/^education$|^skills?$|^languages?$|^reference/i.test(lines[i])) break;
-      block.push(lines[i]);
-    }
-    // Group into entries: lines with years are entry starts
-    let entry = null;
-    for (const line of block) {
-      if (/\b(19|20)\d{2}\b/.test(line) && line.length < 80) {
-        if (entry) data.experience.push(entry);
-        entry = { company: line, role: '', bullets: [] };
-      } else if (entry) {
-        if (!entry.role && line.length < 60 && !line.startsWith('•')) entry.role = line;
-        else { const b = line.replace(/^[•·▪▸\-–]\s*/,''); if (b.length > 5) entry.bullets.push(b); }
+
+  const linkedinM = fullText.match(/linkedin\.com\/in\/[\w\-]+/i);
+  if (linkedinM) data.linkedin = linkedinM[0];
+
+  const webM = fullText.match(/(?:https?:\/\/)?(?:www\.)?[\w\-]+\.\w{2,}(?:\/[\w\-./?%&=]*)?/i);
+  if (webM && !webM[0].includes('linkedin')) data.website = webM[0];
+
+  // ── Detect section boundaries ──
+  const SECTION_PATTERNS = [
+    { key:'objective',     re:/^(objective|summary|professional\s*summary|career\s*objective|profile|about\s*me)/i },
+    { key:'experience',    re:/^(work\s*experience|experience|employment|work\s*history|professional\s*experience|career)/i },
+    { key:'education',     re:/^(education|academic|educational\s*background|qualifications)/i },
+    { key:'skills',        re:/^(skills?|technical\s*skills?|core\s*competencies|competencies|expertise)/i },
+    { key:'languages',     re:/^(languages?|language\s*proficiency)/i },
+    { key:'certifications',re:/^(certifications?|licenses?|credentials|professional\s*development)/i },
+    { key:'awards',        re:/^(awards?|achievements?|honors?|accomplishments?)/i },
+    { key:'contact',       re:/^(contact|contact\s*info|personal\s*info|personal\s*details)/i },
+  ];
+
+  // Map each line index to a section key
+  const sectionStarts = [];
+  lines.forEach((line, idx) => {
+    for (const pat of SECTION_PATTERNS) {
+      if (pat.re.test(line) && line.length < 60) {
+        sectionStarts.push({ key: pat.key, idx, heading: line });
+        break;
       }
     }
-    if (entry) data.experience.push(entry);
+  });
+
+  // Helper: get lines for a section
+  function getSectionLines(key) {
+    const entry = sectionStarts.find(s => s.key === key);
+    if (!entry) return [];
+    const start = entry.idx + 1;
+    const nextSection = sectionStarts.find(s => s.idx > entry.idx);
+    const end = nextSection ? nextSection.idx : lines.length;
+    return lines.slice(start, end).filter(Boolean);
   }
-  // Education
-  const eduIdx = lines.findIndex(l => /^education$/i.test(l));
-  if (eduIdx >= 0) {
-    for (let i = eduIdx + 1; i < Math.min(eduIdx + 10, lines.length); i++) {
-      if (/experience|skills?|languages?|reference/i.test(lines[i])) break;
-      if (/\b(bachelor|master|bsc|bs|ba|ms|ma|phd|diploma|degree)/i.test(lines[i])) {
-        data.education.push({ degree: lines[i], school: lines[i+1] || '', year: '' });
-      }
+
+  // ── NAME & TITLE ─────────────────────────────────────
+  // Name = first substantive line before any section heading,
+  // that looks like a person's name (2–5 words, starts capital)
+  const firstSectionIdx = sectionStarts.length ? sectionStarts[0].idx : lines.length;
+  const headerLines = lines.slice(0, Math.min(firstSectionIdx, 12));
+
+  for (const line of headerLines) {
+    if (line.includes('@') || /^https?/i.test(line) || /^\d/.test(line)) continue;
+    if (line.length > 60) continue;
+    const words = line.split(/\s+/);
+    if (words.length >= 2 && words.length <= 6 && /^[A-ZÁÉÍÓÚÑ]/.test(line)) {
+      if (!data.name) { data.name = line; continue; }
+      // Second qualifying short line = job title
+      if (!data.title && line.length < 50 && words.length <= 6) { data.title = line; break; }
     }
   }
+
+  // ── OBJECTIVE / SUMMARY ──────────────────────────────
+  const objLines = getSectionLines('objective');
+  data.objective = objLines
+    .filter(l => l.length > 15)
+    .slice(0, 6)
+    .join(' ')
+    .trim();
+
+  // ── SKILLS ───────────────────────────────────────────
+  const skillLines = getSectionLines('skills');
+  for (const line of skillLines) {
+    // Split comma/bullet/pipe delimited skills
+    const parts = line.split(/[,|•·▪▸•\t]/).map(s => s.replace(/^[\-–\s]+/, '').trim()).filter(s => s.length > 1 && s.length < 45);
+    data.skills.push(...parts);
+  }
+  // Deduplicate
+  data.skills = [...new Set(data.skills)].slice(0, 14);
+
+  // ── LANGUAGES ────────────────────────────────────────
+  const langLines = getSectionLines('languages');
+  for (const line of langLines) {
+    const parts = line.split(/[,|•·▪]/).map(s => s.trim()).filter(s => s.length > 1 && s.length < 35);
+    data.languages.push(...parts);
+  }
+  data.languages = [...new Set(data.languages)].slice(0, 8);
+
+  // ── EXPERIENCE ───────────────────────────────────────
+  const expLines = getSectionLines('experience');
+  data.experience = parseExperienceBlock(expLines);
+
+  // ── EDUCATION ────────────────────────────────────────
+  const eduLines = getSectionLines('education');
+  data.education = parseEducationBlock(eduLines);
+
+  // ── CERTIFICATIONS ───────────────────────────────────
+  const certLines = getSectionLines('certifications');
+  data.certifications = certLines
+    .filter(l => l.length > 3 && l.length < 120)
+    .slice(0, 6)
+    .map(l => l.replace(/^[\-•·▸]\s*/, ''));
+
+  // ── AWARDS ───────────────────────────────────────────
+  const awardLines = getSectionLines('awards');
+  data.awards = awardLines
+    .filter(l => l.length > 3 && l.length < 120)
+    .slice(0, 6)
+    .map(l => l.replace(/^[\-•·▸]\s*/, ''));
+
   return data;
 }
 
-// ─── Apply parsed data to resume fields ───
+// ─── Experience block parser ───────────────────────────
+// Heuristic: a job entry begins when we see a line that has
+// a year range OR a line followed immediately by a date-like line.
+function parseExperienceBlock(lines) {
+  const entries = [];
+  const DATE_RE = /\b(19|20)\d{2}\b|\bpresent\b|\bcurrent\b|\bnow\b/i;
+  const BULLET_RE = /^[•·▪▸\-–]\s+/;
+
+  let current = null;
+
+  const flush = () => { if (current && (current.company || current.role)) entries.push(current); };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const nextLine = lines[i + 1] || '';
+
+    const isDateLine    = DATE_RE.test(line) && line.length < 60;
+    const nextIsDate    = DATE_RE.test(nextLine) && nextLine.length < 60;
+    const isBullet      = BULLET_RE.test(line);
+    const looksLikeRole = line.length < 70 && !isBullet && !/^(phone|email|address|tel)/i.test(line);
+
+    if ((isDateLine || nextIsDate) && looksLikeRole && !isBullet) {
+      flush();
+      // Determine company vs dates
+      if (nextIsDate) {
+        current = { company: line, role: '', dates: nextLine, bullets: [] };
+        i += 2; // skip the date line we peeked at
+        // next line might be the role
+        if (i < lines.length && !BULLET_RE.test(lines[i]) && lines[i].length < 70 && !DATE_RE.test(lines[i])) {
+          current.role = lines[i]; i++;
+        }
+      } else {
+        // Date embedded in line — try to split
+        const dateMatch = line.match(/(.+?)\s{2,}(.+\b(?:19|20)\d{2}.+)/);
+        if (dateMatch) {
+          current = { company: dateMatch[1].trim(), role: '', dates: dateMatch[2].trim(), bullets: [] };
+        } else {
+          current = { company: line, role: '', dates: '', bullets: [] };
+        }
+        i++;
+      }
+      continue;
+    }
+
+    if (current) {
+      if (isBullet || (line.length > 30 && current.role)) {
+        const bullet = line.replace(BULLET_RE, '').trim();
+        if (bullet.length > 4) current.bullets.push(bullet);
+      } else if (!current.role && looksLikeRole && line.length < 80) {
+        current.role = line;
+      }
+    }
+    i++;
+  }
+  flush();
+  return entries.slice(0, 6);
+}
+
+// ─── Education block parser ────────────────────────────
+function parseEducationBlock(lines) {
+  const entries = [];
+  const DEGREE_RE = /\b(bachelor|master|doctor|phd|mba|bsc|b\.s|m\.s|b\.a|m\.a|associate|diploma|certificate|bs\b|ms\b|ba\b|ma\b|doctor|engineering|science|arts|technology|information)/i;
+  const DATE_RE   = /\b(19|20)\d{2}\b/;
+
+  let current = null;
+  const flush = () => { if (current && current.degree) entries.push(current); };
+
+  for (const line of lines) {
+    if (DEGREE_RE.test(line) && line.length < 120) {
+      flush();
+      current = { degree: line, school: '', year: '', gpa: '' };
+      continue;
+    }
+    if (current) {
+      if (!current.year && DATE_RE.test(line) && line.length < 30) { current.year = line; continue; }
+      if (!current.school && line.length < 80 && line.length > 4 && !DATE_RE.test(line)) { current.school = line; continue; }
+      const gpaM = line.match(/gpa[:\s]+([0-9.]+)/i);
+      if (gpaM) { current.gpa = gpaM[1]; continue; }
+      // If year is embedded
+      const yearM = line.match(/\b(19|20\d{2})\b.*\b(19|20)\d{2}\b|\b(19|20)\d{2}\s*[-–]\s*(present|\d{4})/i);
+      if (yearM && !current.year) { current.year = line.match(/\b(19|20)\d{2}\b.*(?:present|\d{4})/i)?.[0] || line; }
+    }
+  }
+  flush();
+  return entries.slice(0, 5);
+}
+
+// ════════════════════════════════════════════════════════
+//  APPLY PARSED DATA → resume DOM
+// ════════════════════════════════════════════════════════
 function applyParsedData(data) {
   if (!data) return;
-  if (data.isImageOnly) return;
-  if (data.name)  document.querySelector('.header-name').textContent  = data.name.toUpperCase();
-  if (data.title) document.querySelector('.header-title').textContent = data.title.toUpperCase();
-  const contacts = document.querySelectorAll('.contact-item span[contenteditable]');
-  if (data.phone && contacts[0])    contacts[0].textContent = data.phone;
-  if (data.email && contacts[1])    contacts[1].textContent = data.email;
-  if (data.location && contacts[2]) contacts[2].textContent = data.location;
-  if (data.objective) document.querySelector('.profile-text').textContent = data.objective;
+
+  // ── Header ──
+  if (data.name)
+    document.querySelector('.header-name').textContent  = data.name.toUpperCase();
+  if (data.title)
+    document.querySelector('.header-title').textContent = data.title.toUpperCase();
+
+  // ── Contact items ──
+  const cItems = document.querySelectorAll('.contact-item span[contenteditable]');
+  const contactMap = [data.phone, data.email, data.location || data.website].filter(Boolean);
+  contactMap.forEach((val, i) => { if (cItems[i] && val) cItems[i].textContent = val; });
+
+  // ── Objective ──
+  if (data.objective && data.objective.length > 10)
+    document.querySelector('.profile-text').textContent = data.objective;
+
+  // ── Skills ──
   if (data.skills.length) {
-    const list = document.getElementById('skills-list'); list.innerHTML = '';
-    data.skills.slice(0, 10).forEach(s => {
-      const div = document.createElement('div'); div.className = 'skill-item'; div.dataset.level = '75';
-      div.innerHTML = `<div class="skill-item-top"><span class="skill-dot"></span><span class="skill-name" contenteditable="true">${escHtml(s)}</span><button class="rm-btn" onclick="removeRow(this.closest('.skill-item'))">×</button></div><div class="skill-bar" onclick="setSkillLevel(event,this)"><div class="skill-bar-fill" style="width:75%"></div></div>`;
-      list.appendChild(div);
+    const list = document.getElementById('skills-list');
+    list.innerHTML = '';
+    data.skills.forEach(s => {
+      const d = document.createElement('div');
+      d.className     = 'skill-item';
+      d.dataset.level = '75';
+      d.innerHTML = `<div class="skill-item-top"><span class="skill-dot"></span><span class="skill-name" contenteditable="true">${escHtml(s)}</span><button class="rm-btn" onclick="removeRow(this.closest('.skill-item'))">×</button></div><div class="skill-bar" onclick="setSkillLevel(event,this)"><div class="skill-bar-fill" style="width:75%"></div></div>`;
+      list.appendChild(d);
     });
   }
+
+  // ── Languages ──
   if (data.languages.length) {
-    const list = document.getElementById('lang-list'); list.innerHTML = '';
-    data.languages.slice(0, 6).forEach(l => {
-      const div = document.createElement('div'); div.className = 'lang-item';
-      div.innerHTML = `<span contenteditable="true">${escHtml(l)}</span><span class="lang-level" contenteditable="true">(—)</span><button class="rm-btn" onclick="removeRow(this.parentElement)">×</button>`;
-      list.appendChild(div);
+    const list = document.getElementById('lang-list');
+    list.innerHTML = '';
+    data.languages.forEach(l => {
+      // Detect if proficiency is embedded e.g. "English (Fluent)"
+      const m = l.match(/^(.+?)\s*[\-(–(](.+?)[\-–)]*$/);
+      const langName  = m ? m[1].trim() : l;
+      const langLevel = m ? `(${m[2].trim()})` : '(—)';
+      const d = document.createElement('div');
+      d.className = 'lang-item';
+      d.innerHTML = `<span contenteditable="true">${escHtml(langName)}</span><span class="lang-level" contenteditable="true">${escHtml(langLevel)}</span><button class="rm-btn" onclick="removeRow(this.parentElement)">×</button>`;
+      list.appendChild(d);
     });
   }
+
+  // ── Work Experience ──
   if (data.experience.length) {
-    const list = document.getElementById('exp-list'); list.innerHTML = '';
-    data.experience.slice(0, 4).forEach((exp, i) => {
-      if (i > 0) { const hr = document.createElement('hr'); hr.className = 'exp-divider'; list.appendChild(hr); }
-      const div = document.createElement('div'); div.className = 'exp-entry';
-      const bullets = exp.bullets.slice(0, 4).map(b => `<li contenteditable="true">${escHtml(b)}<button class="rm-btn" onclick="removeRow(this.parentElement)">×</button></li>`).join('') || `<li contenteditable="true">Describe your responsibilities<button class="rm-btn" onclick="removeRow(this.parentElement)">×</button></li>`;
-      div.innerHTML = `<button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕</button><div class="exp-header"><div class="exp-company" contenteditable="true">${escHtml(exp.company)}</div><div class="exp-dates" contenteditable="true">Year – Year</div></div><div class="exp-role" contenteditable="true">${escHtml(exp.role)}</div><ul class="exp-bullets">${bullets}</ul><button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>`;
-      list.appendChild(div);
+    const list = document.getElementById('exp-list');
+    list.innerHTML = '';
+    data.experience.forEach((exp, i) => {
+      if (i > 0) {
+        const hr = document.createElement('hr');
+        hr.className = 'exp-divider';
+        list.appendChild(hr);
+      }
+      const d = document.createElement('div');
+      d.className = 'exp-entry';
+      const bullets = exp.bullets.length
+        ? exp.bullets.map(b => `<li contenteditable="true">${escHtml(b)}<button class="rm-btn" onclick="removeRow(this.parentElement)">×</button></li>`).join('')
+        : `<li contenteditable="true">Describe your key responsibilities and achievements<button class="rm-btn" onclick="removeRow(this.parentElement)">×</button></li>`;
+      d.innerHTML = `
+        <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕</button>
+        <div class="exp-header">
+          <div class="exp-company" contenteditable="true">${escHtml(exp.company)}</div>
+          <div class="exp-dates"   contenteditable="true">${escHtml(exp.dates || '—')}</div>
+        </div>
+        <div class="exp-role" contenteditable="true">${escHtml(exp.role || 'Position / Job Title')}</div>
+        <ul class="exp-bullets">${bullets}</ul>
+        <button class="add-row-btn" onclick="addBullet(this.previousElementSibling)">+ Add bullet</button>`;
+      list.appendChild(d);
     });
   }
+
+  // ── Education ──
   if (data.education.length) {
-    const list = document.getElementById('edu-list'); list.innerHTML = '';
-    data.education.slice(0, 3).forEach(edu => {
-      const div = document.createElement('div'); div.className = 'edu-entry';
-      div.innerHTML = `<button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕</button><div class="edu-header"><div class="edu-degree" contenteditable="true">${escHtml(edu.degree)}</div><div class="edu-years" contenteditable="true">${escHtml(edu.year)}</div></div><div class="edu-school" contenteditable="true">${escHtml(edu.school)}</div><div class="edu-gpa">GPA: <strong contenteditable="true">—</strong> <button class="gpa-rm-btn" onclick="removeGPA(this)">✕ GPA</button></div>`;
-      list.appendChild(div);
+    const list = document.getElementById('edu-list');
+    list.innerHTML = '';
+    data.education.forEach(edu => {
+      const d = document.createElement('div');
+      d.className = 'edu-entry';
+      const gpaVal = edu.gpa || '—';
+      d.innerHTML = `
+        <button class="rm-entry-btn" onclick="removeEntry(this.parentElement)">✕</button>
+        <div class="edu-header">
+          <div class="edu-degree" contenteditable="true">${escHtml(edu.degree)}</div>
+          <div class="edu-years"  contenteditable="true">${escHtml(edu.year)}</div>
+        </div>
+        <div class="edu-school" contenteditable="true">${escHtml(edu.school || 'School / University')}</div>
+        <div class="edu-gpa">GPA: <strong contenteditable="true">${escHtml(gpaVal)}</strong>
+          <button class="gpa-rm-btn" onclick="removeGPA(this)">✕ GPA</button></div>`;
+      list.appendChild(d);
     });
     autoScaleEducation();
   }
+
+  // ── Certifications → inject as extra bullets in sidebar ──
+  if (data.certifications.length) {
+    const extra = document.getElementById('extra-content');
+    const certsHTML = data.certifications.map(c =>
+      `<div class="ref-detail" contenteditable="true">${escHtml(c)}</div>`
+    ).join('');
+    const hdr = document.getElementById('extra-heading');
+    hdr.textContent = 'Certifications'; hdr.style.display = '';
+    extra.style.display = '';
+    extra.innerHTML = certsHTML +
+      `<button class="add-row-btn" onclick="addAdditionalRow()">+ Add</button>`;
+    document.getElementById('sidebarModeSelect').value = 'additional';
+  }
+
+  // ── Flash imported fields so user sees what changed ──
+  flashImported();
 }
-function escHtml(str) { return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function flashImported() {
+  const fields = document.querySelectorAll(
+    '.header-name,.header-title,.profile-text,.exp-company,.exp-dates,.exp-role,.edu-degree,.edu-school,.skill-name'
+  );
+  fields.forEach(el => {
+    el.style.transition = 'background .3s';
+    el.style.background = 'rgba(200,169,110,.18)';
+    setTimeout(() => { el.style.background = ''; }, 1800);
+  });
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 // ─── Paste text parser ───
 function parsePastedText() {
